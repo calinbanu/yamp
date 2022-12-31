@@ -1,0 +1,52 @@
+{
+    "name": "yamp-dev-env",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "containerEnv": {
+        "DISPLAY": "unix${localEnv:DISPLAY}",
+        "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus"
+    },
+    "mounts": [
+        "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached",
+        "source=/run/user/1000/bus,target=/run/user/1000/bus,type=bind",
+    ],
+    "runArgs": [
+        "--cap-add=SYS_PTRACE",
+        "--security-opt",
+        "seccomp=unconfined",
+        "--device=/dev/snd",
+        "--device=/dev/dri",
+        "--device=/dev/video0",
+        "--group-add=audio",
+        "--group-add=video",
+    ],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "lldb.executable": "/usr/bin/lldb",
+                "files.watcherExclude": {
+                    "**/target/**": true
+                },
+                // "rust-analyzer.cargo.allFeatures": true,
+                // "rust-analyzer.checkOnSave.command": "clippy",
+                "editor.formatOnSave": true,
+                // "[rust]": {
+                //     "editor.defaultFormatter": "rust-lang.rust-analyzer"
+                // }
+            },
+            "extensions": [
+                "vadimcn.vscode-lldb",
+                // "rust-lang.rust-analyzer",
+                "tamasfe.even-better-toml",
+                // "serayuzgur.crates",
+                "wayou.vscode-todo-highlight",
+                "mhutchie.git-graph",
+                // "dtsvet.vscode-wasm",
+                "ms-vscode.vscode-typescript-next"
+            ]
+        }
+    },
+    "containerUser": "node",
+    // "remoteUser": "node",
+}

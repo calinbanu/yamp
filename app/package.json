@@ -1,0 +1,20 @@
+{
+  "name": "yamp-app",
+  "version": "1.0.0",
+  "description": "Yet Another Map Parser Electron Application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron . --no-sandbox"
+  },
+  "keywords": [
+    "file",
+    "map",
+    "parser",
+    "compiler"
+  ],
+  "author": "Banu Calin",
+  "license": "GPL-3.0-or-later",
+  "devDependencies": {
+    "electron": "^22.0.0"
+  }
+}
