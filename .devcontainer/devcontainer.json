@@ -28,21 +28,21 @@
                 "files.watcherExclude": {
                     "**/target/**": true
                 },
-                // "rust-analyzer.cargo.allFeatures": true,
-                // "rust-analyzer.checkOnSave.command": "clippy",
+                "rust-analyzer.cargo.allFeatures": true,
+                "rust-analyzer.checkOnSave.command": "clippy",
                 "editor.formatOnSave": true,
-                // "[rust]": {
-                //     "editor.defaultFormatter": "rust-lang.rust-analyzer"
-                // }
+                "[rust]": {
+                    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+                }
             },
             "extensions": [
                 "vadimcn.vscode-lldb",
-                // "rust-lang.rust-analyzer",
+                "rust-lang.rust-analyzer",
                 "tamasfe.even-better-toml",
-                // "serayuzgur.crates",
+                "serayuzgur.crates",
                 "wayou.vscode-todo-highlight",
                 "mhutchie.git-graph",
-                // "dtsvet.vscode-wasm",
+                "dtsvet.vscode-wasm",
                 "ms-vscode.vscode-typescript-next"
             ]
         }
