@@ -9,7 +9,7 @@
     },
     "mounts": [
         "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached",
-        "source=/run/user/1000/bus,target=/run/user/1000/bus,type=bind"
+        "source=/run/user/1000/at-spi,target=/run/user/1000/at-spi,type=bind"
     ],
     "runArgs": [
         "--cap-add=SYS_PTRACE",
@@ -43,12 +43,10 @@
                 "wayou.vscode-todo-highlight",
                 "mhutchie.git-graph",
                 "dtsvet.vscode-wasm",
-                "ms-vscode.vscode-typescript-next"
+                "ms-vscode.vscode-typescript-next",
+                "tauri-apps.tauri-vscode"
             ]
         }
     },
-    "containerUser": "node",
-    // Needs to be done at every restart
-    "postAttachCommand": "sudo rm -rf /var/run/dbus && sudo mkdir -p /var/run/dbus && sudo dbus-daemon --config-file=/usr/share/dbus-1/system.conf --print-address"
-    // "remoteUser": "node",
+    "containerUser": "tauri"
 }

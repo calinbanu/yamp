@@ -1,25 +1,28 @@
-FROM node:16.17.1-bullseye
+FROM rust:bullseye
 
 RUN apt-get update && apt-get -y upgrade && apt-get install \
     sudo \
-    libnss3 \
-    libgtk-3-0 \
-    libdrm2 \
-    libgbm1 \
-    libasound2 \
-    libgl1-mesa-dev \
+    libwebkit2gtk-4.0-dev \
+    build-essential \
+    curl \
+    wget \
+    libssl-dev \
+    libgtk-3-dev \
+    libayatana-appindicator3-dev \
+    librsvg2-dev \
     libcanberra-gtk3-module \
     libcanberra-gtk3-0 \
     -yq --no-install-suggests --no-install-recommends \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN echo "node:node" | chpasswd && adduser node sudo
+RUN useradd -rm -d /home/tauri -s /bin/bash -U -G sudo -u 1000 -p "$(openssl passwd -6 tauri)" tauri
 
-USER node
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable -y
- 
-SHELL ["/bin/bash", "--login", "-c"]
+USER tauri
+
+# SHELL ["/bin/bash", "--login", "-c"]
 RUN rustup component add rustfmt
 RUN rustup component add clippy
 RUN rustup target add wasm32-unknown-unknown
 RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+RUN cargo install create-tauri-app
+RUN cargo install tauri-cli
