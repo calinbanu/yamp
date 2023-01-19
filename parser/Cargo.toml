@@ -5,7 +5,16 @@ authors = ["Banu Calin <banucaliniulian@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+clap = { version = "4.0.32", features = ["derive"] }
+regex = "1.7.1"
+log = "0.4.17"
+env_logger = "0.10.0"
+
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+
+[[bin]]
+name = "parser"
+path = "src/cli/main.rs"

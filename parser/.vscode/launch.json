@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug CLI",
+            "cargo": {
+                "args": [
+                    "run",
+                    "--",
+                    "-m",
+                    "../compiler_info/0/zephyr.map"
+                ],
+            },
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "RUST_LOG": "info"
+            },
+        }
+    ]
+}

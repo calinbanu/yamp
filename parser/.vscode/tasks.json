@@ -1,0 +1,37 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "CLI Build",
+			"args": [
+				"build",
+				"-v"
+			],
+			"command": "cargo",
+			"group": "build",
+			"problemMatcher": [
+				"$rustc"
+			],
+		},
+		{
+			"label": "CLI Clean",
+			"args": [
+				"clean"
+			],
+			"command": "cargo",
+			"presentation": {
+				"reveal": "always"
+			}
+		},
+		{
+			"label": "CLI Test",
+			"args": [
+				"test"
+			],
+			"command": "cargo",
+			"presentation": {
+				"reveal": "always"
+			}
+		},
+	]
+}
