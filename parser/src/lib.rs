@@ -51,7 +51,7 @@ impl Parser {
     }
 
     pub fn parse(&mut self, data: &str) {
-        let mut sections_info = Self::get_sections_pos(data);
+        let sections_info = Self::get_sections_pos(data);
         println!("{:?}", sections_info);
         if let Some((start, end)) = sections_info.get(&MapFileSections::MemoryMap) {
             self.parse_memory_map(&data[*start..*end]);
@@ -96,7 +96,7 @@ impl Parser {
     /// Parse memory map section
     fn parse_memory_map(&mut self, data: &str) {
         for section in data.split("\n\n") {
-            Section::parse_section_data(section);
+            let _err = Section::parse_section_data(section);
         }
     }
 }

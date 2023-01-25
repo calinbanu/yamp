@@ -7,7 +7,7 @@ use regex::Regex;
 use std::str::FromStr;
 
 /// Structure containing memory map sub-section information
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct SubSection {
     /// Sub-section name
     name: String,
@@ -102,7 +102,6 @@ impl FromStr for SubSection {
 
 #[cfg(test)]
 mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
     #[test]
@@ -147,31 +146,31 @@ mod tests {
     #[test]
     fn from_str() {
         let name = "test";
-        let address = 0;
-        let size = 0;
-        let valid_str = format!("{name} 0x{address} 0x{size} TEST").to_string();
+        let address = 123;
+        let size = 1234;
+        let valid_str = format!("{name} {:#16x} {:#x} TEST", address, size);
 
         let str_section = SubSection::from_str(&valid_str);
         let new_section = SubSection::new(name.to_string(), address, size);
         assert_eq!(Ok(new_section), str_section);
 
         // Without '0x' in front of address and size
-        let invalid_str = format!("{name} {address} {size} TEST").to_string();
+        let invalid_str = format!("{name} 123 1234 TEST");
         let str_section = SubSection::from_str(&invalid_str);
         assert_eq!(Err(ParserError::InvalidMemoryMapSubSection), str_section);
 
         // Missing size
-        let invalid_str = format!("{name} {address} TEST").to_string();
+        let invalid_str = format!("{name} 1234 TEST");
         let str_section = SubSection::from_str(&invalid_str);
         assert_eq!(Err(ParserError::InvalidMemoryMapSubSection), str_section);
 
         // Missing address and size
-        let invalid_str = format!("{name} TEST").to_string();
+        let invalid_str = format!("{name} TEST");
         let str_section = SubSection::from_str(&invalid_str);
         assert_eq!(Err(ParserError::InvalidMemoryMapSubSection), str_section);
 
         // Space at the beginning
-        let invalid_str = format!(" {name} 0x{address} 0x{size} TEST").to_string();
+        let invalid_str = format!(" {name} {:#16x} {:#x} TEST", address, size);
         let str_section = SubSection::from_str(&invalid_str);
         assert_eq!(Err(ParserError::InvalidMemoryMapSubSection), str_section);
     }

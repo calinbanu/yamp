@@ -14,7 +14,31 @@
             },
             "cwd": "${workspaceFolder}",
             "env": {
-                "RUST_LOG": "info"
+                "RUST_LOG": "error"
+            },
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug test",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=parser",
+                    "--",
+                    "--test-threads",
+                    "1"
+                ],
+                "filter": {
+                    "name": "parser",
+                    "kind": "lib"
+                }
+            },
+            // "cwd": "${workspaceFolder}",
+            "env": {
+                "RUST_LOG": "error"
             },
         }
     ]
