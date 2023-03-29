@@ -52,7 +52,7 @@ impl Parser {
 
     pub fn parse(&mut self, data: &str) {
         let sections_info = Self::get_sections_pos(data);
-        println!("{:?}", sections_info);
+
         if let Some((start, end)) = sections_info.get(&MapFileSections::MemoryMap) {
             self.parse_memory_map(&data[*start..*end]);
         }

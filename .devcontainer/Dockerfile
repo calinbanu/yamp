@@ -6,6 +6,7 @@ RUN apt-get update && apt-get -y upgrade && apt-get install \
     build-essential \
     curl \
     wget \
+    gdb \
     libssl-dev \
     libgtk-3-dev \
     libayatana-appindicator3-dev \
@@ -16,6 +17,7 @@ RUN apt-get update && apt-get -y upgrade && apt-get install \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -rm -d /home/tauri -s /bin/bash -U -G sudo -u 1000 -p "$(openssl passwd -6 tauri)" tauri
+RUN git clone https://github.com/pwndbg/pwndbg /home/tauri/pwndbg && cd /home/tauri/pwndbg && ./setup.sh
 
 USER tauri
 

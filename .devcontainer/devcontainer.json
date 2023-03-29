@@ -5,7 +5,7 @@
     },
     "containerEnv": {
         "DISPLAY": "unix${localEnv:DISPLAY}",
-        "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus"
+        "DBUS_SESSION_BUS_ADDRESS": "unix:path=${localEnv:XDG_RUNTIME_DIR}/wayland-0"
     },
     "mounts": [
         "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached",
@@ -15,11 +15,13 @@
         "--cap-add=SYS_PTRACE",
         "--security-opt",
         "seccomp=unconfined",
-        "--device=/dev/snd",
-        "--device=/dev/dri",
-        "--device=/dev/video0",
+        // "--device=/dev/snd",
+        // "--device=/dev/dri",
+        // "--device=/dev/video0",
         "--group-add=audio",
-        "--group-add=video"
+        "--group-add=video",
+        "--name=vsc-yamp-dev",
+        // "${localEnv:DEV_ENV_DOCKER_OPTIONS}"
     ],
     "customizations": {
         "vscode": {
@@ -48,5 +50,6 @@
             ]
         }
     },
-    "containerUser": "tauri"
+    "containerUser": "tauri",
+    "initializeCommand": "${localWorkspaceFolder}/.devcontainer/dev-setup.sh"
 }
