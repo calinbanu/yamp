@@ -1,12 +1,12 @@
 use std::{collections::HashMap, error::Error};
 
-mod section;
-mod sub_section;
+pub mod section;
+pub mod subsection;
 
 use section::Section;
-use sub_section::SubSection;
+use subsection::SubSection;
 
-const NAME_REGEX: &str = r#"([[[:alnum:]]./*_"-]+)"#;
+const NAME_REGEX: &str = r#"([[[:alnum:]]./*_"-//]+)"#;
 const HEX_REGEX: &str = "0x([[:xdigit:]]+)";
 
 #[derive(Debug, PartialEq)]
