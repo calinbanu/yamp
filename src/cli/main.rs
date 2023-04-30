@@ -14,7 +14,6 @@ fn main() -> std::io::Result<()> {
     env_logger::init();
     let cli = Cli::parse();
 
-    println!("{}", cli.mapfile);
     let file = File::open(cli.mapfile)?;
     let data = std::io::read_to_string(file)?;
 

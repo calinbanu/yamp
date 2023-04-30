@@ -9,7 +9,7 @@ clap = { version = "4.0.32", features = ["derive"] }
 regex = "1.7.1"
 log = "0.4.17"
 env_logger = "0.10.0"
-
+quick-xml = "0.28.2"
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.

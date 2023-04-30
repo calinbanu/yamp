@@ -27,7 +27,7 @@ fn single_line() {
     // valid
     const DATA_0: &str =
         concat!(" .bss.test  0x00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n");
-    let subsection = match SubSection::from_str(DATA_0) {
+    let subsection = match SubSection::parse(DATA_0) {
         Ok(ss) => ss,
         Err(_) => panic!(),
     };
@@ -41,34 +41,34 @@ fn single_line() {
     // missing space before subsection name
     const DATA_1: &str =
         concat!(".bss.test  0x00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n");
-    assert!(SubSection::from_str(DATA_1).is_err());
+    assert!(SubSection::parse(DATA_1).is_err());
 
     // missing lib/obj
     const DATA_2: &str = concat!(" .bss.test  0x00000000DEADBEEF       0xFF\n");
-    assert!(SubSection::from_str(DATA_2).is_err());
+    assert!(SubSection::parse(DATA_2).is_err());
 
     // missing size
     const DATA_3: &str =
         concat!(" .bss.test  0x00000000DEADBEEF        /path/to/lib/libtest.a(test.cc.obj)\n");
-    assert!(SubSection::from_str(DATA_3).is_err());
+    assert!(SubSection::parse(DATA_3).is_err());
 
     // mssing address
     const DATA_4: &str = concat!(" .bss.test         0xFF /path/to/lib/libtest.a(test.cc.obj)\n");
-    assert!(SubSection::from_str(DATA_4).is_err());
+    assert!(SubSection::parse(DATA_4).is_err());
 
     // mssing name
     const DATA_5: &str = concat!("          0xFF /path/to/lib/libtest.a(test.cc.obj)\n");
-    assert!(SubSection::from_str(DATA_5).is_err());
+    assert!(SubSection::parse(DATA_5).is_err());
 
     // invalid address format
     const DATA_6: &str =
         concat!(" .bss.test  00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n");
-    assert!(SubSection::from_str(DATA_6).is_err());
+    assert!(SubSection::parse(DATA_6).is_err());
 
     // invalid address format
     const DATA_7: &str =
         concat!(" .bss.test  0x00000000DEADBEEF       FF /path/to/lib/libtest.a(test.cc.obj)\n");
-    assert!(SubSection::from_str(DATA_7).is_err());
+    assert!(SubSection::parse(DATA_7).is_err());
 }
 
 #[test]
@@ -78,7 +78,7 @@ fn single_line_overlapping_fill() {
         " .bss.test      0x000000000002261e       0x4 /path/to/lib/libtest.a(test.cc.obj)\n",
         " *fill*         0x000000000002261e       0x2\n"
     );
-    let subsection = match SubSection::from_str(DATA_0) {
+    let subsection = match SubSection::parse(DATA_0) {
         Ok(ss) => ss,
         Err(_) => panic!(),
     };
@@ -93,7 +93,7 @@ fn two_line() {
         " .bss.test",
         "                0x00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n"
     );
-    let subsection = match SubSection::from_str(DATA_0) {
+    let subsection = match SubSection::parse(DATA_0) {
         Ok(ss) => ss,
         Err(_) => panic!(),
     };
@@ -109,49 +109,49 @@ fn two_line() {
         ".bss.test",
         "                0x00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n"
     );
-    assert!(SubSection::from_str(DATA_1).is_err());
+    assert!(SubSection::parse(DATA_1).is_err());
 
     // missing lib/obj
     const DATA_2: &str = concat!(
         " .bss.test",
         "                0x00000000DEADBEEF       0xFF \n"
     );
-    assert!(SubSection::from_str(DATA_2).is_err());
+    assert!(SubSection::parse(DATA_2).is_err());
 
     // missing size
     const DATA_3: &str = concat!(
         " .bss.test",
         "                0x00000000DEADBEEF        /path/to/lib/libtest.a(test.cc.obj)\n"
     );
-    assert!(SubSection::from_str(DATA_3).is_err());
+    assert!(SubSection::parse(DATA_3).is_err());
 
     // mssing address
     const DATA_4: &str = concat!(
         " .bss.test",
         "                       0xFF /path/to/lib/libtest.a(test.cc.obj)\n"
     );
-    assert!(SubSection::from_str(DATA_4).is_err());
+    assert!(SubSection::parse(DATA_4).is_err());
 
     // mssing name
     const DATA_5: &str = concat!(
         "",
         "                0x00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n"
     );
-    assert!(SubSection::from_str(DATA_5).is_err());
+    assert!(SubSection::parse(DATA_5).is_err());
 
     // invalid address format
     const DATA_6: &str = concat!(
         " .bss.test",
         "                00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n"
     );
-    assert!(SubSection::from_str(DATA_6).is_err());
+    assert!(SubSection::parse(DATA_6).is_err());
 
     // invalid address format
     const DATA_7: &str = concat!(
         " .bss.test",
         "                0x00000000DEADBEEF       FF /path/to/lib/libtest.a(test.cc.obj)\n"
     );
-    assert!(SubSection::from_str(DATA_7).is_err());
+    assert!(SubSection::parse(DATA_7).is_err());
 }
 
 #[test]
@@ -162,7 +162,7 @@ fn two_line_w_overlapping_fill() {
         " *fill*         0x00000000DEADBEEF       0x01\n"
     );
 
-    assert!(SubSection::from_str(DATA_0).is_ok());
+    assert!(SubSection::parse(DATA_0).is_ok());
 
     const DATA_1: &str = concat!(
         " .bss.test",
@@ -171,7 +171,7 @@ fn two_line_w_overlapping_fill() {
         " *fill*         0x00000000DEADBEEF       0x01\n"
     );
 
-    assert!(SubSection::from_str(DATA_1).is_ok());
+    assert!(SubSection::parse(DATA_1).is_ok());
 }
 
 #[test]

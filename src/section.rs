@@ -88,7 +88,7 @@ impl Section {
         result
     }
 
-    pub fn parse_section(data: &str) -> Result<Section, ParserError> {
+    pub fn parser(data: &str) -> Result<Section, ParserError> {
         if data.trim().is_empty() {
             error!("Empty section!");
             return Err(ParserError::InvalidMemoryMapSection);
@@ -165,8 +165,6 @@ impl Section {
                 "Size mismatch in {}: {} vs {}",
                 section.name, sum, section.size
             );
-
-            // println!("{:#?}", section);
         }
         Ok(section)
     }

@@ -2,10 +2,11 @@
 //!
 //! This module contains the code to process and store information
 //! regarding sub-sections of the memory map.
-use crate::{ParserError, HEX_REGEX, NAME_REGEX};
+use crate::{ParserError, ToXmlString, HEX_REGEX, NAME_REGEX};
 use log::{error, warn};
+use quick_xml::{events::BytesText, Writer};
 use regex::Regex;
-use std::str::FromStr;
+use std::{io::Cursor, str::FromStr};
 
 /// Structure containing memory map sub-section information
 #[derive(Debug, PartialEq, Eq)]
@@ -20,6 +21,8 @@ pub struct SubSection {
     fill_size: u64,
     /// If the address of the fill is the same as the sub-section address
     fill_overlaps: bool,
+    /// Data from where information were extracted
+    data: String,
 }
 
 impl SubSection {
@@ -37,6 +40,7 @@ impl SubSection {
             size,
             fill_size: 0,
             fill_overlaps: false,
+            data: String::new(),
         }
     }
 
@@ -77,12 +81,13 @@ impl SubSection {
             false => self.size + self.fill_size,
         }
     }
-}
 
-impl FromStr for SubSection {
-    type Err = ParserError;
-
-    fn from_str(data: &str) -> Result<Self, Self::Err> {
+    /// Parse string and generates a new section or error
+    ///
+    /// # Arguments
+    ///
+    /// * `data` - String containing sub-section
+    pub fn parse(data: &str) -> Result<Self, ParserError> {
         if data.is_empty() {
             error!("Empty sub-section!");
             return Err(ParserError::InvalidMemoryMapSubSection);
@@ -131,6 +136,8 @@ impl FromStr for SubSection {
             return Err(ParserError::InvalidMemoryMapSubSection);
         }
 
+        subsection.as_mut().unwrap().data = data.to_string();
+
         for line in lines {
             if let Some(cap) = fill_regex.captures(line) {
                 let subsection = subsection.as_mut().unwrap();
@@ -156,7 +163,42 @@ impl FromStr for SubSection {
 
             warn!("Could not parse sub-section line: {line}");
         }
-
+        println!("{}", subsection.as_ref().unwrap().to_xml_string());
         subsection.ok_or(ParserError::InvalidMemoryMapSubSection)
+    }
+}
+
+impl FromStr for SubSection {
+    type Err = ParserError;
+
+    fn from_str(data: &str) -> Result<Self, Self::Err> {
+        Self::parse(data)
+    }
+}
+
+impl ToXmlString for SubSection {
+    fn to_xml_string(&self) -> String {
+        let mut writer = Writer::new(Cursor::new(Vec::new()));
+        writer
+            .create_element("subsection")
+            .with_attributes(
+                vec![
+                    ("name", self.name.as_str()),
+                    ("address", format!("{:#016x}", self.address).as_str()),
+                    ("address", self.size.to_string().as_str()),
+                    ("fill_size", self.fill_size.to_string().as_str()),
+                    ("fill_overlaps", self.fill_overlaps.to_string().as_str()),
+                ]
+                .into_iter(),
+            )
+            .write_inner_content(|w| {
+                w.create_element("data")
+                    .write_text_content(BytesText::new(&self.data))
+                    .unwrap();
+                Ok(())
+            })
+            .unwrap();
+        // ToDo(calin) TBD something with the error path
+        String::from_utf8(writer.into_inner().into_inner()).unwrap()
     }
 }

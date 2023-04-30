@@ -27,6 +27,10 @@ impl std::fmt::Display for ParserError {
 
 impl Error for ParserError {}
 
+pub trait ToXmlString {
+    fn to_xml_string(&self) -> String;
+}
+
 pub struct Parser {}
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -96,7 +100,7 @@ impl Parser {
     /// Parse memory map section
     fn parse_memory_map(&mut self, data: &str) {
         for section in data.split("\n\n") {
-            let _err = Section::parse_section(section);
+            let _err = Section::parser(section);
         }
     }
 }
