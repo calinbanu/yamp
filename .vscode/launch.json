@@ -6,13 +6,38 @@
             "name": "Debug CLI",
             "cargo": {
                 "args": [
-                    "run",
-                    "--",
-                    "-m",
-                    "../compiler_info/0/zephyr.map"
+                    "build",
                 ],
             },
-            "cwd": "${workspaceFolder}",
+            "env": {
+                "RUST_LOG": "error"
+            },
+            "program": "target/debug/parser",
+            "args": [
+                "--mapfile",
+                "./compiler_info/0/zephyr.map"
+            ],
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug section tests",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--test",
+                    "section-tests",
+                    "--",
+                    "--nocapture",
+                    "--test-threads",
+                    "1"
+                ],
+                "filter": {
+                    "name": "section-tests",
+                    "kind": "test"
+                }
+            },
+            // "cwd": "${workspaceFolder}",
             "env": {
                 "RUST_LOG": "error"
             },
@@ -20,20 +45,20 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug test",
+            "name": "Debug subsection tests",
             "cargo": {
                 "args": [
                     "test",
-                    "--no-run",
-                    "--lib",
-                    "--package=parser",
+                    "--test",
+                    "subsection-tests",
                     "--",
+                    "--nocapture",
                     "--test-threads",
                     "1"
                 ],
                 "filter": {
-                    "name": "parser",
-                    "kind": "lib"
+                    "name": "subsection-tests",
+                    "kind": "test"
                 }
             },
             // "cwd": "${workspaceFolder}",

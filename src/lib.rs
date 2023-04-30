@@ -96,7 +96,7 @@ impl Parser {
     /// Parse memory map section
     fn parse_memory_map(&mut self, data: &str) {
         for section in data.split("\n\n") {
-            let _err = Section::parse_section_data(section);
+            let _err = Section::parse_section(section);
         }
     }
 }

@@ -1,27 +1,177 @@
 use parser::subsection::SubSection;
-use std::{fs, process::exit, str::FromStr};
+use std::str::FromStr;
 
-struct Fixture {}
+// struct LoggerDb<'a, 'b> {
+//     db: Arc<Mutex<Vec<&'a Record<'b>>>>,
+// }
+// impl<'a, 'b> LoggerDb<'a, 'b> {
+//     fn add_log(&self, record: &'a Record<'b>) {
+//         self.db.clone()
+//     }
+// }
+// struct Logger;
+// impl log::Log for Logger {
+//     fn enabled(&self, metadata: &Metadata) -> bool {
+//         true
+//     }
+//     fn log(&self, record: &Record) {
+//         println!("{:#?}", record);
+//     }
+//     fn flush(&self) {}
+// }
+// static LOGGER: Logger = Logger;
+// log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Info));
 
-impl Fixture {
-    fn load_test_file(path: &str) -> String {
-        match fs::read_to_string(path) {
-            Ok(content) => content,
-            Err(err) => {
-                println!("Problem reading test file: \"{}\" ({})", path, err);
-                exit(1);
-            }
-        }
-    }
+#[test]
+fn single_line() {
+    // valid
+    const DATA_0: &str =
+        concat!(" .bss.test  0x00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n");
+    let subsection = match SubSection::from_str(DATA_0) {
+        Ok(ss) => ss,
+        Err(_) => panic!(),
+    };
+    assert_eq!(subsection.name(), ".bss.test");
+    assert_eq!(subsection.address(), 0x00000000DEADBEEF);
+    assert_eq!(subsection.size(), 0xFF);
+
+    // valid without obj
+    // TODO(calin) TBD
+
+    // missing space before subsection name
+    const DATA_1: &str =
+        concat!(".bss.test  0x00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n");
+    assert!(SubSection::from_str(DATA_1).is_err());
+
+    // missing lib/obj
+    const DATA_2: &str = concat!(" .bss.test  0x00000000DEADBEEF       0xFF\n");
+    assert!(SubSection::from_str(DATA_2).is_err());
+
+    // missing size
+    const DATA_3: &str =
+        concat!(" .bss.test  0x00000000DEADBEEF        /path/to/lib/libtest.a(test.cc.obj)\n");
+    assert!(SubSection::from_str(DATA_3).is_err());
+
+    // mssing address
+    const DATA_4: &str = concat!(" .bss.test         0xFF /path/to/lib/libtest.a(test.cc.obj)\n");
+    assert!(SubSection::from_str(DATA_4).is_err());
+
+    // mssing name
+    const DATA_5: &str = concat!("          0xFF /path/to/lib/libtest.a(test.cc.obj)\n");
+    assert!(SubSection::from_str(DATA_5).is_err());
+
+    // invalid address format
+    const DATA_6: &str =
+        concat!(" .bss.test  00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n");
+    assert!(SubSection::from_str(DATA_6).is_err());
+
+    // invalid address format
+    const DATA_7: &str =
+        concat!(" .bss.test  0x00000000DEADBEEF       FF /path/to/lib/libtest.a(test.cc.obj)\n");
+    assert!(SubSection::from_str(DATA_7).is_err());
 }
 
 #[test]
-fn subsection() {
-    let file =
-        Fixture::load_test_file("/workspaces/yamp/tests/test-valid-single-line-subsection.txt");
-    println!("{}", file);
-    let test = SubSection::from_str(&file);
-    assert!(true);
+fn single_line_overlapping_fill() {
+    // valid
+    const DATA_0: &str = concat!(
+        " .bss.test      0x000000000002261e       0x4 /path/to/lib/libtest.a(test.cc.obj)\n",
+        " *fill*         0x000000000002261e       0x2\n"
+    );
+    let subsection = match SubSection::from_str(DATA_0) {
+        Ok(ss) => ss,
+        Err(_) => panic!(),
+    };
+    assert_eq!(subsection.name(), ".bss.test");
+    assert_eq!(subsection.address(), 0x000000000002261e);
+    assert_eq!(subsection.size(), 0x2);
+}
+
+#[test]
+fn two_line() {
+    const DATA_0: &str = concat!(
+        " .bss.test",
+        "                0x00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n"
+    );
+    let subsection = match SubSection::from_str(DATA_0) {
+        Ok(ss) => ss,
+        Err(_) => panic!(),
+    };
+    assert_eq!(subsection.name(), ".bss.test");
+    assert_eq!(subsection.address(), 0x00000000DEADBEEF);
+    assert_eq!(subsection.size(), 0xFF);
+
+    // valid without obj
+    // TODO(calin) TBD
+
+    // missing space before subsection name
+    const DATA_1: &str = concat!(
+        ".bss.test",
+        "                0x00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n"
+    );
+    assert!(SubSection::from_str(DATA_1).is_err());
+
+    // missing lib/obj
+    const DATA_2: &str = concat!(
+        " .bss.test",
+        "                0x00000000DEADBEEF       0xFF \n"
+    );
+    assert!(SubSection::from_str(DATA_2).is_err());
+
+    // missing size
+    const DATA_3: &str = concat!(
+        " .bss.test",
+        "                0x00000000DEADBEEF        /path/to/lib/libtest.a(test.cc.obj)\n"
+    );
+    assert!(SubSection::from_str(DATA_3).is_err());
+
+    // mssing address
+    const DATA_4: &str = concat!(
+        " .bss.test",
+        "                       0xFF /path/to/lib/libtest.a(test.cc.obj)\n"
+    );
+    assert!(SubSection::from_str(DATA_4).is_err());
+
+    // mssing name
+    const DATA_5: &str = concat!(
+        "",
+        "                0x00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n"
+    );
+    assert!(SubSection::from_str(DATA_5).is_err());
+
+    // invalid address format
+    const DATA_6: &str = concat!(
+        " .bss.test",
+        "                00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n"
+    );
+    assert!(SubSection::from_str(DATA_6).is_err());
+
+    // invalid address format
+    const DATA_7: &str = concat!(
+        " .bss.test",
+        "                0x00000000DEADBEEF       FF /path/to/lib/libtest.a(test.cc.obj)\n"
+    );
+    assert!(SubSection::from_str(DATA_7).is_err());
+}
+
+#[test]
+fn two_line_w_overlapping_fill() {
+    const DATA_0: &str = concat!(
+        " .bss.test",
+        "                0x00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n",
+        " *fill*         0x00000000DEADBEEF       0x01\n"
+    );
+
+    assert!(SubSection::from_str(DATA_0).is_ok());
+
+    const DATA_1: &str = concat!(
+        " .bss.test",
+        "                0x00000000DEADBEEF       0xFF /path/to/lib/libtest.a(test.cc.obj)\n",
+        "                                         0x70 (size before relaxing)",
+        " *fill*         0x00000000DEADBEEF       0x01\n"
+    );
+
+    assert!(SubSection::from_str(DATA_1).is_ok());
 }
 
 #[test]
@@ -32,9 +182,9 @@ fn new() {
 
     let section = SubSection::new(name.clone(), address, size);
 
-    assert_eq!(section.get_name(), name);
-    assert_eq!(section.get_address(), address);
-    assert_eq!(section.get_size(), size);
+    assert_eq!(section.name(), name);
+    assert_eq!(section.address(), address);
+    assert_eq!(section.size(), size);
 }
 
 #[test]
@@ -47,7 +197,7 @@ fn new_size_non_overlaping() {
     let mut section = SubSection::new("test".to_string(), address, size);
     section.set_fill(fill_address, fill_size);
 
-    assert_eq!(section.get_size(), size + fill_size)
+    assert_eq!(section.size(), size + fill_size)
 }
 
 #[test]
@@ -60,5 +210,5 @@ fn new_size_overlaping() {
     let mut section = SubSection::new("test".to_string(), address, size);
     section.set_fill(fill_address, fill_size);
 
-    assert_eq!(section.get_size(), fill_size)
+    assert_eq!(section.size(), fill_size)
 }

@@ -1,1 +1,0 @@
- .bss.test  0x00000000DEADBEEF        0xFF /path/to/lib/libtest.a(test.cc.obj)
