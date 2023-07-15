@@ -21,19 +21,19 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug section tests",
+            "name": "Debug segment tests",
             "cargo": {
                 "args": [
                     "test",
                     "--test",
-                    "section-tests",
+                    "segment-tests",
                     "--",
                     "--nocapture",
                     "--test-threads",
                     "1"
                 ],
                 "filter": {
-                    "name": "section-tests",
+                    "name": "segment-tests",
                     "kind": "test"
                 }
             },
@@ -45,25 +45,21 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug subsection tests",
+            "name": "Debug entry tests",
             "cargo": {
                 "args": [
                     "test",
                     "--test",
-                    "subsection-tests",
+                    "entry-tests",
                     "--",
                     "--nocapture",
                     "--test-threads",
                     "1"
                 ],
                 "filter": {
-                    "name": "subsection-tests",
+                    "name": "entry-tests",
                     "kind": "test"
                 }
-            },
-            // "cwd": "${workspaceFolder}",
-            "env": {
-                "RUST_LOG": "error"
             },
         }
     ]

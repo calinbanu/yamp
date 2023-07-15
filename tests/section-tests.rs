@@ -1,297 +1,119 @@
-use parser::section::Section;
-use std::str::FromStr;
+use parser::{
+    entry::Entry,
+    segment::Segment,
+    xmlwriter::{ToXmlWriter, XmlWriter},
+};
 
-//     // #[test]
-//     // fn basic_new() {
-//     //     let name = "test".to_string();
+mod uthelper;
+use uthelper::*;
+use xml::ParserConfig;
 
-//     //     let section = Section::new(name.clone());
+const ENTRIES_COUNT: usize = 10;
+const RAND_STRING_SIZE: usize = 10;
+const RAND_NUMBER_MAX: u64 = u32::MAX as u64;
 
-//     //     assert_eq!(section.name, name);
-//     //     assert_eq!(section.address, None);
-//     //     assert_eq!(section.size, 0);
-//     //     assert!(section.sub_sections.is_empty());
-//     //     assert_eq!(section.get_sub_sections_total_size(), 0);
-//     // }
+#[test]
+fn new_no_size_and_address() {
+    let name = get_random_string(RAND_STRING_SIZE);
 
-//     #[test]
-//     fn from_str() {
-//         let name = "test";
-//         let address = 123;
-//         let size = 1234;
+    let segment = Segment::new(&name);
 
-//         let mut valid_section = Section::new(name.to_string());
+    assert_eq!(segment.get_name(), name);
+    assert_eq!(segment.get_address(), None);
+    assert_eq!(segment.get_size(), None);
+    assert!(segment.get_entries().is_empty());
+    assert_eq!(segment.get_entries_total_size(), 0);
+}
 
-//         let string = format!("{name}");
-//         let section = Section::from_str(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
+#[test]
+fn new_with_size_and_address() {
+    let name = get_random_string(RAND_STRING_SIZE);
+    let address = 1;
+    let size = 1;
 
-//         valid_section.address = Some(address);
-//         valid_section.size = size;
+    let mut segment = Segment::new(&name);
+    segment.set_size_and_address(size, address);
 
-//         let string = format!("{name} {:#016x} {:#x}", address, size);
-//         let section = Section::from_str(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
+    assert_eq!(segment.get_name(), name);
+    assert_eq!(segment.get_address(), Some(address));
+    assert_eq!(segment.get_size(), Some(size));
+    assert!(segment.get_entries().is_empty());
+    assert_eq!(segment.get_entries_total_size(), 0);
+}
 
-//         // Space in front of name
-//         let string = format!(" {name}");
-//         let section = Section::from_str(&string);
-//         assert!(section.is_err());
+#[test]
+fn entries_test() {
+    let name = get_random_string(RAND_STRING_SIZE);
 
-//         // Size is missing
-//         let string = format!(" {name} {:#016x}", address);
-//         let section = Section::from_str(&string);
-//         assert!(section.is_err());
+    let mut segment = Segment::new(&name);
 
-//         // Address is missing
-//         let string = format!(" {name} {:#x}", size);
-//         let section = Section::from_str(&string);
-//         assert!(section.is_err());
+    assert!(segment.get_entries().is_empty());
 
-//         // Missing '0x'
-//         let string = format!(" {name} 123 1234");
-//         let section = Section::from_str(&string);
-//         assert!(section.is_err());
-//     }
+    let mut test_entries: Vec<Entry> = vec![];
+    for _ in 0..ENTRIES_COUNT {
+        let name = get_random_string(RAND_STRING_SIZE);
+        let data = get_random_string(RAND_STRING_SIZE);
+        let address = get_random_number(RAND_NUMBER_MAX);
+        let size = get_random_number(RAND_NUMBER_MAX);
 
-//     #[test]
-//     fn parse_section_data_no_sub_section() {
-//         let name = "test";
-//         let address = 123;
-//         let size = 1234;
+        let entry = Entry::new(&name, address, size, &data);
 
-//         let mut valid_section = Section::new(name.to_string());
+        segment.add_entry(entry.clone());
 
-//         let string = format!("{name}");
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
+        test_entries.push(entry);
+    }
 
-//         let string = format!("{name}\n *(SORT_BY_ALIGNMENT({name}))\n");
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
+    let entries = segment.get_entries();
 
-//         valid_section.address = Some(address);
-//         valid_section.size = size;
+    assert_eq!(entries.len(), ENTRIES_COUNT);
+    assert_eq!(entries, test_entries);
 
-//         let string = format!("{name} {:#016x} {:#x}\n", address, size);
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
+    let test_entries_sum = test_entries.iter().fold(0, |acc, e| acc + e.get_size());
 
-//         let string = format!("{name}\n {:#016x} {:#x}\n", address, size);
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
+    assert_eq!(segment.get_entries_total_size(), test_entries_sum);
+}
 
-//         let string = format!(
-//             "{name} {:#016x} {:#x}\n *(SORT_BY_ALIGNMENT({name}))\n",
-//             address, size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
+fn test_xml_output(segment: &Segment, skip_data: bool) {
+    let sink = UTSinkSource::new();
+    let mut writer = XmlWriter::new_empty(sink.clone());
+    if skip_data {
+        writer.set_skip_data(true);
+    }
+    segment.to_xml_writer(&mut writer);
 
-//         let string = format!(
-//             "{name}\n {:#016x} {:#x}\n *(SORT_BY_ALIGNMENT({name}))\n",
-//             address, size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
-//     }
+    drop(writer);
 
-//     #[test]
-//     fn parse_section_data_one_sub_section_no_fill() {
-//         let section_name = "test";
-//         let section_address = 123;
-//         let section_size = 1234;
+    let mut parser = ParserConfig::default()
+        .ignore_root_level_whitespace(true)
+        .trim_whitespace(true)
+        .create_reader(sink);
 
-//         let sub_section_name = ".test.test";
-//         let sub_section_address = 123;
-//         let sub_section_size = 1234;
+    check_start_document_event(parser.next().unwrap());
 
-//         let mut valid_section = Section::new(section_name.to_string());
-//         let valid_sub_section = SubSection::new(
-//             sub_section_name.to_string(),
-//             sub_section_address,
-//             sub_section_size,
-//         );
-//         valid_section.sub_sections.push(valid_sub_section);
+    check_segment_start_element_event(parser.next().unwrap(), segment);
 
-//         let string = format!(
-//             "{section_name}\n  *(SORT_BY_ALIGNMENT({section_name}))\n {sub_section_name} {:#016x} {:#x} TEST\n",
-//             sub_section_address, sub_section_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
+    check_end_element_event(parser.next().unwrap(), "segment");
 
-//         valid_section.address = Some(section_address);
-//         valid_section.size = section_size;
+    check_end_document_event(parser.next().unwrap());
+}
 
-//         let string = format!(
-//             "{section_name} {:#016x} {:#x}\n  *(SORT_BY_ALIGNMENT({section_name}))\n {sub_section_name} {:#016x} {:#x} TEST\n",
-//             section_address, section_size, sub_section_address, sub_section_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
+#[test]
+fn xml_writer_no_size_and_address() {
+    let name = get_random_string(RAND_STRING_SIZE);
 
-//         let string = format!(
-//             "{section_name}\n {:#016x} {:#x}\n  *(SORT_BY_ALIGNMENT({section_name}))\n {sub_section_name} {:#016x} {:#x} TEST\n",
-//             section_address, section_size, sub_section_address, sub_section_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
+    let segment = Segment::new(&name);
 
-//         let string = format!(
-//             "{section_name} {:#016x} {:#x}\n {sub_section_name} {:#016x} {:#x} TEST\n",
-//             section_address, section_size, sub_section_address, sub_section_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
+    test_xml_output(&segment, false);
+}
 
-//         let string = format!(
-//             "{section_name}\n {:#016x} {:#x}\n {sub_section_name} {:#016x} {:#x} TEST\n",
-//             section_address, section_size, sub_section_address, sub_section_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
-//     }
+#[test]
+fn xml_writer_with_size_and_address() {
+    let name = get_random_string(RAND_STRING_SIZE);
+    let size = get_random_number(RAND_NUMBER_MAX);
+    let address: u64 = get_random_number(RAND_NUMBER_MAX);
 
-//     #[test]
-//     fn parse_section_data_one_sub_section_with_fill_no_overlap() {
-//         let section_name = "test";
-//         let section_address = 123;
-//         let section_size = 1234;
+    let mut segment = Segment::new(&name);
+    segment.set_size_and_address(size, address);
 
-//         let sub_section_name = ".test.test";
-//         let sub_section_address = 123;
-//         let sub_section_size = 1234;
-//         let sub_section_fill_address = sub_section_address + 10;
-//         let sub_section_fill_size = 12;
-
-//         let mut valid_section = Section::new(section_name.to_string());
-//         let mut valid_sub_section = SubSection::new(
-//             sub_section_name.to_string(),
-//             sub_section_address,
-//             sub_section_size,
-//         );
-//         valid_sub_section.set_fill(sub_section_fill_address, sub_section_fill_size);
-//         valid_section.sub_sections.push(valid_sub_section);
-
-//         let string = format!(
-//             "{section_name}\n  *(SORT_BY_ALIGNMENT({section_name}))\n {sub_section_name} {:#016x} {:#x} TEST\n *fill* {:#016x} {:#x}\n",
-//             sub_section_address, sub_section_size, sub_section_fill_address, sub_section_fill_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
-
-//         valid_section.address = Some(section_address);
-//         valid_section.size = section_size;
-
-//         let string = format!(
-//             "{section_name} {:#016x} {:#x}\n  *(SORT_BY_ALIGNMENT({section_name}))\n {sub_section_name} {:#016x} {:#x} TEST\n *fill* {:#016x} {:#x}\n",
-//             section_address, section_size, sub_section_address, sub_section_size, sub_section_fill_address, sub_section_fill_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
-
-//         let string = format!(
-//             "{section_name}\n {:#016x} {:#x}\n  *(SORT_BY_ALIGNMENT({section_name}))\n {sub_section_name} {:#016x} {:#x} TEST\n *fill* {:#016x} {:#x}\n",
-//             section_address, section_size, sub_section_address, sub_section_size, sub_section_fill_address, sub_section_fill_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
-
-//         let string = format!(
-//             "{section_name} {:#016x} {:#x}\n {sub_section_name} {:#016x} {:#x} TEST\n *fill* {:#016x} {:#x}\n",
-//             section_address, section_size, sub_section_address, sub_section_size, sub_section_fill_address, sub_section_fill_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
-
-//         let string = format!(
-//             "{section_name}\n {:#016x} {:#x}\n {sub_section_name} {:#016x} {:#x} TEST\n *fill* {:#016x} {:#x}\n",
-//             section_address, section_size, sub_section_address, sub_section_size, sub_section_fill_address, sub_section_fill_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
-//     }
-
-//     #[test]
-//     fn parse_section_data_one_sub_section_with_fill_with_overlap() {
-//         let section_name = "test";
-//         let section_address = 123;
-//         let section_size = 1234;
-
-//         let sub_section_name = ".test.test";
-//         let sub_section_address = 123;
-//         let sub_section_size = 1234;
-//         let sub_section_fill_address = sub_section_address;
-//         let sub_section_fill_size = 12;
-
-//         let mut valid_section = Section::new(section_name.to_string());
-//         let mut valid_sub_section = SubSection::new(
-//             sub_section_name.to_string(),
-//             sub_section_address,
-//             sub_section_size,
-//         );
-//         valid_sub_section.set_fill(sub_section_fill_address, sub_section_fill_size);
-//         valid_section.sub_sections.push(valid_sub_section);
-
-//         let string = format!(
-//             "{section_name}\n  *(SORT_BY_ALIGNMENT({section_name}))\n {sub_section_name} {:#016x} {:#x} TEST\n *fill* {:#016x} {:#x}\n",
-//             sub_section_address, sub_section_size, sub_section_fill_address, sub_section_fill_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
-
-//         valid_section.address = Some(section_address);
-//         valid_section.size = section_size;
-
-//         let string = format!(
-//             "{section_name} {:#016x} {:#x}\n  *(SORT_BY_ALIGNMENT({section_name}))\n {sub_section_name} {:#016x} {:#x} TEST\n *fill* {:#016x} {:#x}\n",
-//             section_address, section_size, sub_section_address, sub_section_size, sub_section_fill_address, sub_section_fill_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
-
-//         let string = format!(
-//             "{section_name}\n {:#016x} {:#x}\n  *(SORT_BY_ALIGNMENT({section_name}))\n {sub_section_name} {:#016x} {:#x} TEST\n *fill* {:#016x} {:#x}\n",
-//             section_address, section_size, sub_section_address, sub_section_size, sub_section_fill_address, sub_section_fill_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
-
-//         let string = format!(
-//             "{section_name} {:#016x} {:#x}\n {sub_section_name} {:#016x} {:#x} TEST\n *fill* {:#016x} {:#x}\n",
-//             section_address, section_size, sub_section_address, sub_section_size, sub_section_fill_address, sub_section_fill_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
-
-//         let string = format!(
-//             "{section_name}\n {:#016x} {:#x}\n {sub_section_name} {:#016x} {:#x} TEST\n *fill* {:#016x} {:#x}\n",
-//             section_address, section_size, sub_section_address, sub_section_size, sub_section_fill_address, sub_section_fill_size
-//         );
-//         let section = Section::parse_section_data(&string);
-//         assert!(section.is_ok());
-//         assert!(section.unwrap().eq(&valid_section));
-//     }
+    test_xml_output(&segment, false);
+}
