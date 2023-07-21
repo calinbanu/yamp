@@ -8,10 +8,6 @@ mod uthelper;
 use uthelper::*;
 use xml::ParserConfig;
 
-const ENTRIES_COUNT: usize = 10;
-const RAND_STRING_SIZE: usize = 10;
-const RAND_NUMBER_MAX: u64 = u32::MAX as u64;
-
 #[test]
 fn new_no_size_and_address() {
     let name = get_random_string(RAND_STRING_SIZE);

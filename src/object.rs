@@ -4,7 +4,7 @@ use xml::writer::XmlEvent;
 
 use crate::xmlwriter::{ToXmlWriter, XmlWriter};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Object {
     name: String,
     pub(crate) segment_size: HashMap<String, u64>,
@@ -20,6 +20,10 @@ impl Object {
 
     pub fn get_name(&self) -> &str {
         &self.name
+    }
+
+    pub fn get_total_size(&self) -> u64 {
+        self.segment_size.values().sum()
     }
 
     pub fn update_segment_size(&mut self, name: &str, size: u64) {

@@ -15,7 +15,9 @@
             "program": "target/debug/parser",
             "args": [
                 "--mapfile",
-                "./compiler_info/0/zephyr.map"
+                "./compiler_info/0/zephyr.map",
+                "--loglevel",
+                "trace"
             ],
         },
         {
@@ -51,6 +53,26 @@
                     "test",
                     "--test",
                     "entry-tests",
+                    "--",
+                    "--nocapture",
+                    "--test-threads",
+                    "1"
+                ],
+                "filter": {
+                    "name": "entry-tests",
+                    "kind": "test"
+                }
+            },
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug parser tests",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--test",
+                    "parser-tests",
                     "--",
                     "--nocapture",
                     "--test-threads",

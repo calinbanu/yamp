@@ -2,7 +2,10 @@
 //!
 //! This module contains the code to process and store entry information
 
-use crate::xmlwriter::{ToXmlWriter, XmlWriter};
+use crate::{
+    excelwriter::ToExcelWriter,
+    xmlwriter::{ToXmlWriter, XmlWriter},
+};
 use std::io::Write;
 use xml::writer::XmlEvent;
 
@@ -147,5 +150,14 @@ impl<W: Write> ToXmlWriter<W> for Entry {
         }
 
         writer.end_element();
+    }
+}
+
+impl ToExcelWriter for Entry {
+    fn to_excel_writer<'a, 'b>(&'a self, writer: &mut crate::excelwriter::ExcelWriter<'b>)
+    where
+        'a: 'b,
+    {
+        writer.write_entry(self);
     }
 }

@@ -10,7 +10,7 @@ use std::io::Write;
 use xml::writer::XmlEvent;
 
 /// Structure containing memory map segment information
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Segment {
     /// Segment name
     name: String,
@@ -112,9 +112,14 @@ impl<W: Write> ToXmlWriter<W> for Segment {
 }
 
 impl ToExcelWriter for Segment {
-    fn to_excel_writer(&self, writer: &mut ExcelWriter) {
+    fn to_excel_writer<'a, 'b>(&'a self, writer: &mut ExcelWriter<'b>)
+    where
+        'a: 'b,
+    {
+        writer.write_segment(self);
+
         for entry in &self.entries {
-            writer.write_entry(self, entry);
+            entry.to_excel_writer(writer);
         }
     }
 }

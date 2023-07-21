@@ -1,19 +1,23 @@
+use log::error;
 use xlsxwriter::{prelude::FormatAlignment, Format, Workbook, Worksheet, XlsxError};
 
 use crate::{entry::Entry, object::Object, segment::Segment};
 
 pub trait ToExcelWriter {
-    fn to_excel_writer(&self, writer: &mut ExcelWriter);
+    fn to_excel_writer<'a, 'b>(&'a self, writer: &mut ExcelWriter<'b>)
+    where
+        'a: 'b;
 }
 
-pub struct ExcelWriter {
+pub struct ExcelWriter<'a> {
     wb: Option<Workbook>,
+    current_segment: Option<&'a Segment>,
     segment_count: u32,
     entry_count: u32,
-    obj_seg_count: u32,
+    obj_count: u32,
 }
 
-impl ExcelWriter {
+impl<'a> ExcelWriter<'a> {
     fn write_segment_header(ws: &mut Worksheet, format: &Format) -> Result<(), XlsxError> {
         ws.write_string(0, 0, "Nr", Some(format))?;
         ws.write_string(0, 1, "Segment", Some(format))?;
@@ -55,13 +59,14 @@ impl ExcelWriter {
 
         Ok(Self {
             wb: Some(wb),
+            current_segment: None,
             segment_count: 0,
             entry_count: 0,
-            obj_seg_count: 0,
+            obj_count: 0,
         })
     }
 
-    pub fn write_segment(&mut self, segment: &Segment) {
+    pub fn write_segment(&mut self, segment: &'a Segment) {
         let mut segment_ws = self
             .wb
             .as_ref()
@@ -85,9 +90,11 @@ impl ExcelWriter {
                 .unwrap();
         }
         self.segment_count += 1;
+
+        self.current_segment = Some(segment);
     }
 
-    pub fn write_entry(&mut self, segment: &Segment, entries: &Entry) {
+    pub fn write_entry(&mut self, entries: &Entry) {
         let mut entry_ws = self
             .wb
             .as_ref()
@@ -100,19 +107,21 @@ impl ExcelWriter {
         entry_ws
             .write_number(row, 0, self.entry_count as f64, None)
             .unwrap();
-        entry_ws
-            .write_string(row, 1, segment.get_name(), None)
-            .unwrap();
+        if let Some(segment) = self.current_segment {
+            entry_ws
+                .write_string(row, 1, segment.get_name(), None)
+                .unwrap();
+        } else {
+            error!("Invalid segment while writing to xlsx!");
+        }
         entry_ws
             .write_string(row, 2, entries.get_name(), None)
             .unwrap();
-        if segment.get_address().is_some() {
-            let s_address = format!("{:#016x}", entries.get_address());
-            entry_ws.write_string(row, 3, &s_address, None).unwrap();
-            entry_ws
-                .write_number(row, 4, entries.get_size() as f64, None)
-                .unwrap();
-        }
+        let s_address = format!("{:#016x}", entries.get_address());
+        entry_ws.write_string(row, 3, &s_address, None).unwrap();
+        entry_ws
+            .write_number(row, 4, entries.get_size() as f64, None)
+            .unwrap();
         self.entry_count += 1;
     }
 
@@ -126,21 +135,21 @@ impl ExcelWriter {
             .unwrap();
 
         for (name, size) in &object.segment_size {
-            let row = self.obj_seg_count + 1;
+            let row = self.obj_count + 1;
             obj_ws
-                .write_number(row, 0, self.obj_seg_count as f64, None)
+                .write_number(row, 0, self.obj_count as f64, None)
                 .unwrap();
             obj_ws
                 .write_string(row, 1, object.get_name(), None)
                 .unwrap();
             obj_ws.write_string(row, 2, name, None).unwrap();
             obj_ws.write_number(row, 3, *size as f64, None).unwrap();
-            self.obj_seg_count += 1;
+            self.obj_count += 1;
         }
     }
 }
 
-impl Drop for ExcelWriter {
+impl<'a> Drop for ExcelWriter<'a> {
     fn drop(&mut self) {
         self.wb.take().unwrap().close().unwrap();
     }

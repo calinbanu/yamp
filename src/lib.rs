@@ -40,7 +40,7 @@ impl std::fmt::Display for ParserError {
 impl Error for ParserError {}
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-enum Section {
+pub enum Section {
     /// Corresponds to 'Archive member included to satisfy reference by file (symbol)' section
     ArchiveMembers,
     /// Corresponds to 'Allocating common symbols' section
@@ -60,23 +60,43 @@ pub struct Parser {
 }
 
 impl Parser {
-    fn add_segment(&mut self, segment: Segment) {
+    pub fn new() -> Self {
+        Self {
+            memory_map_segments: vec![],
+            memory_map_objects: HashMap::new(),
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.memory_map_objects.clear();
+        self.memory_map_segments.clear();
+    }
+
+    pub fn get_memory_map_segments(&self) -> &[Segment] {
+        &self.memory_map_segments
+    }
+
+    pub fn get_memory_map_objects(&self) -> &HashMap<String, Object> {
+        &self.memory_map_objects
+    }
+
+    pub fn add_segment(&mut self, segment: Segment) {
         for entry in segment.get_entries() {
-            let obj_name = entry.get_object_name().unwrap();
+            if let Some(obj_name) = entry.get_object_name() {
+                if !self.memory_map_objects.contains_key(obj_name) {
+                    self.memory_map_objects
+                        .insert(obj_name.to_string(), Object::new(obj_name));
+                }
 
-            if !self.memory_map_objects.contains_key(obj_name) {
-                self.memory_map_objects
-                    .insert(obj_name.to_string(), Object::new(obj_name));
+                let obj = self.memory_map_objects.get_mut(obj_name).unwrap();
+                obj.update_segment_size(segment.get_name(), entry.get_size());
             }
-
-            let obj = self.memory_map_objects.get_mut(obj_name).unwrap();
-            obj.update_segment_size(segment.get_name(), entry.get_size());
         }
 
         self.memory_map_segments.push(segment);
     }
 
-    fn parse_entry_info(data: &str) -> Option<Entry> {
+    pub fn parse_entry_info(data: &str) -> Option<Entry> {
         if data.is_empty() {
             error!("Empty entry!");
             return None;
@@ -134,7 +154,10 @@ impl Parser {
                 entry = Some(tmp);
                 break;
             } else {
-                info!("Skipped line while parsing entry:\n{line}");
+                // skip lines that contain linker information
+                if !line.contains("*(SORT_BY_ALIGNMENT(") {
+                    info!("Skipped line while parsing '{}' entry:\n{line}", name);
+                }
             }
         }
 
@@ -169,17 +192,19 @@ impl Parser {
                 entry.set_fill(address, size);
                 break;
             } else {
-                info!(
-                    "Skipped line while parsing entry:\n{} -> {line}",
-                    entry.as_ref().unwrap().get_name()
-                );
+                // skip lines that contain linker information
+                if !line.contains("*(SORT_BY_ALIGNMENT(") {
+                    info!("Skipped line while parsing '{}' entry:\n{line}", name);
+                }
             }
         }
+
+        // TODO(calin) parse rest of lines
 
         entry
     }
 
-    fn parse_segment_info(data: &str) -> Option<Segment> {
+    pub fn parse_segment_info(data: &str) -> Option<Segment> {
         if data.trim().is_empty() {
             error!("Empty segment!");
             return None;
@@ -225,13 +250,13 @@ impl Parser {
         segment
     }
 
-    fn split_segment(data: &str) -> Vec<(usize, usize)> {
+    pub fn split_segment(data: &str) -> Vec<(usize, usize)> {
         let mut pos: usize = 0;
         let mut start: usize = 0;
         let mut result: Vec<(usize, usize)> = Vec::new();
         let entry_start_regex = Regex::new(r"^ [[[:alnum:]]/.]").unwrap();
         for line in data.lines() {
-            if line.contains("SORT_BY_")
+            if line.contains("(SORT_BY_")
                 || line.is_empty()
                 || line.starts_with(" *fill*")
                 || line.starts_with(" FILL")
@@ -285,18 +310,18 @@ impl Parser {
         Some(segment)
     }
 
-    fn parse_section(line: &str) -> Option<Section> {
+    pub fn parse_section(line: &str) -> Option<Section> {
         let mut ret = None;
 
-        if line.contains("Archive member included") {
+        if line.starts_with("Archive member included") {
             ret = Some(Section::ArchiveMembers);
-        } else if line.contains("Allocating common symbols") {
+        } else if line.starts_with("Allocating common symbols") {
             ret = Some(Section::CommonSymbols);
-        } else if line.contains("Discarded input sections") {
+        } else if line.starts_with("Discarded input sections") {
             ret = Some(Section::DiscardedInput);
-        } else if line.contains("Memory Configuration") {
+        } else if line.starts_with("Memory Configuration") {
             ret = Some(Section::MemoryConfiguration);
-        } else if line.contains("Linker script and memory map") {
+        } else if line.starts_with("Linker script and memory map") {
             ret = Some(Section::MemoryMap);
         }
 
@@ -315,6 +340,7 @@ impl Parser {
             if chunk.is_empty() {
                 continue;
             }
+
             let first_line = chunk.lines().next().unwrap();
             if let Some(section) = current_section {
                 match section {
@@ -357,21 +383,29 @@ impl Parser {
 // Helper functions for ToXmlWriter::to_xml_writer trait implementation
 impl Parser {
     fn write_segments<W: Write>(&self, writer: &mut XmlWriter<W>) {
-        let count = self.memory_map_segments.len().to_string();
-        writer.start_element(XmlEvent::start_element("segments").attr("count", &count));
-        self.memory_map_segments
-            .iter()
-            .for_each(|s| s.to_xml_writer(writer));
-        writer.end_element();
+        let count = self.memory_map_segments.len();
+        if count > 0 {
+            writer.start_element(
+                XmlEvent::start_element("segments").attr("count", &count.to_string()),
+            );
+            self.memory_map_segments
+                .iter()
+                .for_each(|s| s.to_xml_writer(writer));
+            writer.end_element();
+        }
     }
 
     fn write_objects<W: Write>(&self, writer: &mut XmlWriter<W>) {
-        let count = self.memory_map_objects.len().to_string();
-        writer.start_element(XmlEvent::start_element("objects").attr("count", &count));
-        self.memory_map_objects
-            .values()
-            .for_each(|o| o.to_xml_writer(writer));
-        writer.end_element();
+        let count = self.memory_map_objects.len();
+        if count > 0 {
+            writer.start_element(
+                XmlEvent::start_element("objects").attr("count", &count.to_string()),
+            );
+            self.memory_map_objects
+                .values()
+                .for_each(|o| o.to_xml_writer(writer));
+            writer.end_element();
+        }
     }
 }
 
@@ -401,9 +435,11 @@ impl<W: Write> ToXmlWriter<W> for Parser {
 }
 
 impl ToExcelWriter for Parser {
-    fn to_excel_writer(&self, writer: &mut ExcelWriter) {
+    fn to_excel_writer<'a, 'b>(&'a self, writer: &mut ExcelWriter<'b>)
+    where
+        'a: 'b,
+    {
         for segment in self.memory_map_segments.iter() {
-            writer.write_segment(segment);
             segment.to_excel_writer(writer);
         }
 
