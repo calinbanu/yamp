@@ -53,7 +53,6 @@ pub enum Section {
     MemoryMap,
 }
 
-#[derive(Debug)]
 pub struct Parser {
     memory_map_segments: Vec<Segment>,
     memory_map_objects: HashMap<String, Object>,

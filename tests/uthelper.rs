@@ -5,7 +5,7 @@ use std::{
     rc::Rc,
 };
 
-use parser::{entry::Entry, segment::Segment};
+use parser::{entry::Entry, object::Object, segment::Segment};
 use rand::{distributions::Alphanumeric, Rng};
 use xml::{common::XmlVersion, reader::XmlEvent};
 
@@ -82,6 +82,83 @@ pub fn check_start_document_event(event: XmlEvent) {
         assert_eq!(standalone, Option::None);
     } else {
         panic!("Expected XmlEvent::StartDocument!")
+    }
+}
+
+#[allow(dead_code)]
+pub fn check_end_document_event(event: XmlEvent) {
+    if XmlEvent::EndDocument != event {
+        panic!("Expected XmlEvent::Characters!")
+    }
+}
+
+#[allow(dead_code)]
+pub fn check_start_element_event(event: XmlEvent, event_name: &str) {
+    if let XmlEvent::StartElement {
+        name,
+        attributes,
+        namespace: _,
+    } = event
+    {
+        assert_eq!(name.local_name, event_name);
+        assert_eq!(name.namespace, Option::None);
+        assert_eq!(name.prefix, Option::None);
+        assert_eq!(attributes.len(), 0);
+
+        // TODO(calin) check namespace ?
+    } else {
+        panic!("Expected XmlEvent::StartElement!")
+    }
+}
+
+#[allow(dead_code)]
+pub fn check_end_element_event(event: XmlEvent, event_name: &str) {
+    if let XmlEvent::EndElement { name } = event {
+        assert_eq!(name.local_name, event_name);
+        assert_eq!(name.namespace, Option::None);
+        assert_eq!(name.prefix, Option::None);
+    } else {
+        panic!("Expected XmlEvent::EndElement!")
+    }
+}
+
+#[allow(dead_code)]
+pub fn check_segment_start_element_event(event: XmlEvent, segment: &Segment) {
+    if let XmlEvent::StartElement {
+        name,
+        attributes,
+        namespace: _,
+    } = event
+    {
+        assert_eq!(name.local_name, "segment");
+        assert_eq!(name.namespace, Option::None);
+        assert_eq!(name.prefix, Option::None);
+        assert!(matches!(attributes.len(), 1 | 3));
+
+        let attr = &attributes[0];
+        assert_eq!(attr.name.local_name, "name");
+        assert_eq!(attr.name.namespace, Option::None);
+        assert_eq!(attr.name.prefix, Option::None);
+        assert_eq!(attr.value, segment.get_name());
+
+        if attributes.len() == 3 {
+            let attr = &attributes[1];
+            assert_eq!(attr.name.local_name, "address");
+            assert_eq!(attr.name.namespace, Option::None);
+            assert_eq!(attr.name.prefix, Option::None);
+            let address = format!("{:#016x}", segment.get_address().unwrap());
+            assert_eq!(attr.value, address);
+
+            let attr = &attributes[2];
+            assert_eq!(attr.name.local_name, "size");
+            assert_eq!(attr.name.namespace, Option::None);
+            assert_eq!(attr.name.prefix, Option::None);
+            let size = format!("{}", segment.get_size().unwrap());
+            assert_eq!(attr.value, size);
+        }
+        // TODO(calin) check namespace ?
+    } else {
+        panic!("Expected XmlEvent::StartElement!")
     }
 }
 
@@ -169,36 +246,6 @@ pub fn check_entry_start_element_event(event: XmlEvent, entry: &Entry) {
 }
 
 #[allow(dead_code)]
-pub fn check_start_element_event(event: XmlEvent, event_name: &str) {
-    if let XmlEvent::StartElement {
-        name,
-        attributes,
-        namespace: _,
-    } = event
-    {
-        assert_eq!(name.local_name, event_name);
-        assert_eq!(name.namespace, Option::None);
-        assert_eq!(name.prefix, Option::None);
-        assert_eq!(attributes.len(), 0);
-
-        // TODO(calin) check namespace ?
-    } else {
-        panic!("Expected XmlEvent::StartElement!")
-    }
-}
-
-#[allow(dead_code)]
-pub fn check_end_element_event(event: XmlEvent, event_name: &str) {
-    if let XmlEvent::EndElement { name } = event {
-        assert_eq!(name.local_name, event_name);
-        assert_eq!(name.namespace, Option::None);
-        assert_eq!(name.prefix, Option::None);
-    } else {
-        panic!("Expected XmlEvent::EndElement!")
-    }
-}
-
-#[allow(dead_code)]
 pub fn check_characters_event(event: XmlEvent, characters: &str) {
     if let XmlEvent::Characters { 0: data } = event {
         assert_eq!(data, characters);
@@ -208,47 +255,76 @@ pub fn check_characters_event(event: XmlEvent, characters: &str) {
 }
 
 #[allow(dead_code)]
-pub fn check_end_document_event(event: XmlEvent) {
-    if XmlEvent::EndDocument != event {
-        panic!("Expected XmlEvent::Characters!")
-    }
-}
-
-#[allow(dead_code)]
-pub fn check_segment_start_element_event(event: XmlEvent, segment: &Segment) {
+pub fn check_object_start_element_event(event: XmlEvent, object: &Object) {
     if let XmlEvent::StartElement {
         name,
         attributes,
         namespace: _,
     } = event
     {
-        assert_eq!(name.local_name, "segment");
+        assert_eq!(name.local_name, "object");
         assert_eq!(name.namespace, Option::None);
         assert_eq!(name.prefix, Option::None);
-        assert!(matches!(attributes.len(), 1 | 3));
+        assert!(matches!(attributes.len(), 1));
 
         let attr = &attributes[0];
         assert_eq!(attr.name.local_name, "name");
         assert_eq!(attr.name.namespace, Option::None);
         assert_eq!(attr.name.prefix, Option::None);
-        assert_eq!(attr.value, segment.get_name());
+        assert_eq!(attr.value, object.get_name());
+    } else {
+        panic!("Expected XmlEvent::StartElement!")
+    }
+}
 
-        if attributes.len() == 3 {
-            let attr = &attributes[1];
-            assert_eq!(attr.name.local_name, "address");
-            assert_eq!(attr.name.namespace, Option::None);
-            assert_eq!(attr.name.prefix, Option::None);
-            let address = format!("{:#016x}", segment.get_address().unwrap());
-            assert_eq!(attr.value, address);
+#[allow(dead_code)]
+pub fn check_object_segment_start_element_event(event: XmlEvent, object: &Object) {
+    if let XmlEvent::StartElement {
+        name: event_name,
+        attributes,
+        namespace: _,
+    } = event
+    {
+        assert_eq!(event_name.local_name, "segment");
+        assert_eq!(event_name.namespace, Option::None);
+        assert_eq!(event_name.prefix, Option::None);
+        assert!(matches!(attributes.len(), 2));
 
-            let attr = &attributes[2];
-            assert_eq!(attr.name.local_name, "size");
-            assert_eq!(attr.name.namespace, Option::None);
-            assert_eq!(attr.name.prefix, Option::None);
-            let size = format!("{}", segment.get_size().unwrap());
-            assert_eq!(attr.value, size);
-        }
-        // TODO(calin) check namespace ?
+        let attr = &attributes[0];
+        assert_eq!(attr.name.local_name, "name");
+        assert_eq!(attr.name.namespace, Option::None);
+        assert_eq!(attr.name.prefix, Option::None);
+        let size = object.get_segment_size(&attr.value);
+        assert!(size.is_some());
+
+        let attr = &attributes[1];
+        assert_eq!(attr.name.local_name, "size");
+        assert_eq!(attr.name.namespace, Option::None);
+        assert_eq!(attr.name.prefix, Option::None);
+        assert_eq!(attr.value, size.unwrap().to_string());
+    } else {
+        panic!("Expected XmlEvent::StartElement!")
+    }
+}
+
+#[allow(dead_code)]
+pub fn check_count_start_element_event(event: XmlEvent, name: &str) -> u64 {
+    if let XmlEvent::StartElement {
+        name: element_name,
+        attributes,
+        namespace: _,
+    } = event
+    {
+        assert_eq!(element_name.local_name, name);
+        assert_eq!(element_name.namespace, Option::None);
+        assert_eq!(element_name.prefix, Option::None);
+        assert!(matches!(attributes.len(), 1));
+
+        let attr = &attributes[0];
+        assert_eq!(attr.name.local_name, "count");
+        assert_eq!(attr.name.namespace, Option::None);
+        assert_eq!(attr.name.prefix, Option::None);
+        attr.value.parse::<u64>().unwrap()
     } else {
         panic!("Expected XmlEvent::StartElement!")
     }

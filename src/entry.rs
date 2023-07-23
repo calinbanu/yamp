@@ -32,12 +32,6 @@ pub struct Entry {
 
 impl Entry {
     /// Creates a new `Entry`
-    ///
-    /// # Arguments
-    ///
-    /// * `name`    - Entry name
-    /// * `address` - Start address
-    /// * `size`    - Size of the entry
     pub fn new(name: &str, address: u64, size: u64, data: &str) -> Self {
         Self {
             name: name.to_string(),

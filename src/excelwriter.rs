@@ -134,7 +134,8 @@ impl<'a> ExcelWriter<'a> {
             .unwrap()
             .unwrap();
 
-        for (name, size) in &object.segment_size {
+        for name in object.get_all_segments() {
+            let size = object.get_segment_size(name);
             let row = self.obj_count + 1;
             obj_ws
                 .write_number(row, 0, self.obj_count as f64, None)
@@ -143,7 +144,14 @@ impl<'a> ExcelWriter<'a> {
                 .write_string(row, 1, object.get_name(), None)
                 .unwrap();
             obj_ws.write_string(row, 2, name, None).unwrap();
-            obj_ws.write_number(row, 3, *size as f64, None).unwrap();
+            if let Some(size) = size {
+                obj_ws.write_number(row, 3, size as f64, None).unwrap();
+            } else {
+                error!(
+                    "Error occured while trying to write object size: {}",
+                    object.get_name()
+                );
+            }
             self.obj_count += 1;
         }
     }
