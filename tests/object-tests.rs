@@ -7,6 +7,7 @@ use uthelper::*;
 use xml::ParserConfig;
 
 const RAND_NAME_STRING_LEN: usize = 20;
+const ENTRIES_COUNT: usize = 10;
 
 #[test]
 fn new_empty() {
@@ -23,7 +24,7 @@ fn new_distinct_sections() {
     let mut object = Object::new(&object_name);
 
     let mut sum = 0;
-    for _ in 0..10 {
+    for _ in 0..ENTRIES_COUNT {
         let segment_name = get_random_string(RAND_NAME_STRING_LEN);
         let segment_size = get_random_number(RAND_ADDRESS_MAX);
         sum += segment_size;
@@ -41,7 +42,7 @@ fn new_same_section() {
     let segment_name = get_random_string(RAND_NAME_STRING_LEN);
 
     let mut sum = 0;
-    for _ in 0..10 {
+    for _ in 0..ENTRIES_COUNT {
         let segment_size = get_random_number(RAND_ADDRESS_MAX);
         sum += segment_size;
 
@@ -85,7 +86,7 @@ fn xml_writer_distinct_sections() {
     let sink = UTSinkSource::new();
     let mut writer = XmlWriter::new_empty(sink.clone());
 
-    for _ in 0..10 {
+    for _ in 0..ENTRIES_COUNT {
         let segment_name = get_random_string(RAND_NAME_STRING_LEN);
         let segment_size = get_random_number(RAND_ADDRESS_MAX);
 
@@ -128,7 +129,7 @@ fn xml_writer_same_section() {
     let mut writer = XmlWriter::new_empty(sink.clone());
     let segment_name = get_random_string(RAND_NAME_STRING_LEN);
 
-    for _ in 0..10 {
+    for _ in 0..ENTRIES_COUNT {
         let segment_size = get_random_number(RAND_ADDRESS_MAX);
 
         object.update_segment_size(&segment_name, segment_size);
