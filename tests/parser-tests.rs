@@ -9,10 +9,18 @@ mod uthelper;
 use uthelper::*;
 use xml::{reader::XmlEvent, ParserConfig};
 
+const ENTRIES_COUNT: usize = 10;
+const RAND_NAME_STRING_LEN: usize = 20;
+const RAND_DATA_STRING_LEN: usize = 100;
+
 #[test]
 fn parse_section_fn() {
     // Random string, should return None
-    let line = get_random_string(RAND_STRING_SIZE);
+    let line = get_random_string(RAND_DATA_STRING_LEN);
+    assert_eq!(Parser::parse_section(&line), None);
+
+    // Empty string, should return None
+    let line = "".to_string();
     assert_eq!(Parser::parse_section(&line), None);
 
     let archive_members_line = "Archive member included to satisfy reference by file (symbol)";
@@ -297,18 +305,18 @@ fn add_segment_fn() {
     assert!(parser.get_memory_map_segments().is_empty());
     assert!(parser.get_memory_map_objects().is_empty());
 
-    let name = get_random_string(RAND_STRING_SIZE);
-    let address = get_random_number(RAND_NUMBER_MAX);
-    let size = get_random_number(RAND_NUMBER_MAX);
+    let name = get_random_string(RAND_NAME_STRING_LEN);
+    let address = get_random_number(RAND_ADDRESS_MAX);
+    let size = get_random_number(RAND_ADDRESS_MAX);
 
     let mut segment = Segment::new(&name);
     segment.set_size_and_address(size, address);
 
     for _ in 0..ENTRIES_COUNT {
-        let name = get_random_string(RAND_STRING_SIZE);
-        let data = get_random_string(RAND_STRING_SIZE);
-        let address = get_random_number(RAND_NUMBER_MAX);
-        let size = get_random_number(RAND_NUMBER_MAX);
+        let name = get_random_string(RAND_NAME_STRING_LEN);
+        let data = get_random_string(RAND_NAME_STRING_LEN);
+        let address = get_random_number(RAND_ADDRESS_MAX);
+        let size = get_random_number(RAND_ADDRESS_MAX);
 
         let entry = Entry::new(&name, address, size, &data);
 
@@ -328,13 +336,13 @@ fn add_segment_fn() {
     let mut segment = Segment::new(&name);
     segment.set_size_and_address(size, address);
 
-    let object = get_random_string(RAND_STRING_SIZE);
+    let object = get_random_string(RAND_NAME_STRING_LEN);
     let mut sum = 0;
     for _ in 0..ENTRIES_COUNT {
-        let name = get_random_string(RAND_STRING_SIZE);
-        let data = get_random_string(RAND_STRING_SIZE);
-        let address = get_random_number(RAND_NUMBER_MAX);
-        let size = get_random_number(RAND_NUMBER_MAX);
+        let name = get_random_string(RAND_NAME_STRING_LEN);
+        let data = get_random_string(RAND_NAME_STRING_LEN);
+        let address = get_random_number(RAND_ADDRESS_MAX);
+        let size = get_random_number(RAND_ADDRESS_MAX);
         sum += size;
 
         let mut entry = Entry::new(&name, address, size, &data);

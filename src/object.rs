@@ -25,7 +25,7 @@ impl Object {
         }
     }
 
-    /// Get object name
+    /// Get object [name](#structfield.name)
     pub fn get_name(&self) -> &str {
         &self.name
     }

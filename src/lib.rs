@@ -1,5 +1,5 @@
+use std::collections::HashMap;
 use std::io::Write;
-use std::{collections::HashMap, error::Error};
 
 pub mod entry;
 pub mod excelwriter;
@@ -19,26 +19,7 @@ use xmlwriter::{ToXmlWriter, XmlWriter};
 const NAME_REGEX: &str = r#"([[[:alnum:]]./*_"-//]+)"#;
 const HEX_REGEX: &str = "0x([[:xdigit:]]+)";
 
-#[derive(Debug, PartialEq)]
-pub enum ParserError {
-    InvalidMemoryMapSegment,
-    InvalidMemoryMapEntry,
-    InvalidSegment,
-}
-
-impl std::fmt::Display for ParserError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let msg = match self {
-            ParserError::InvalidMemoryMapSegment => "Invalid memory map segment",
-            ParserError::InvalidMemoryMapEntry => "Invalid memory map entry",
-            ParserError::InvalidSegment => "Could not find segment",
-        };
-        write!(f, "{}", msg)
-    }
-}
-
-impl Error for ParserError {}
-
+/// Enum containing section types
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Section {
     /// Corresponds to 'Archive member included to satisfy reference by file (symbol)' section
@@ -53,12 +34,16 @@ pub enum Section {
     MemoryMap,
 }
 
+/// Struct containing parsing results
 pub struct Parser {
+    /// List of parsed memory map segments
     memory_map_segments: Vec<Segment>,
+    /// Hash Containing name of object as key and corresponding [Object] as value
     memory_map_objects: HashMap<String, Object>,
 }
 
 impl Parser {
+    /// Returns new [Parser]. Used in UT
     pub fn new() -> Self {
         Self {
             memory_map_segments: vec![],
@@ -66,55 +51,72 @@ impl Parser {
         }
     }
 
+    /// Clears structure. Used in UT
     pub fn clear(&mut self) {
         self.memory_map_objects.clear();
         self.memory_map_segments.clear();
     }
 
+    /// Returns all stored [Segment]'s
     pub fn get_memory_map_segments(&self) -> &[Segment] {
         &self.memory_map_segments
     }
 
+    /// Returns all stored [Object]'s
     pub fn get_memory_map_objects(&self) -> &HashMap<String, Object> {
         &self.memory_map_objects
     }
 
+    /// Adds new [Segment]
     pub fn add_segment(&mut self, segment: Segment) {
+        // For each entry in the parsed segment
         for entry in segment.get_entries() {
+            // Get object name
             if let Some(obj_name) = entry.get_object_name() {
+                // Check if object was created and inserted into hashmap
                 if !self.memory_map_objects.contains_key(obj_name) {
                     self.memory_map_objects
                         .insert(obj_name.to_string(), Object::new(obj_name));
                 }
 
+                // Get the object
                 let obj = self.memory_map_objects.get_mut(obj_name).unwrap();
+                // Update segment size in object
                 obj.update_segment_size(segment.get_name(), entry.get_size());
             }
         }
 
+        // Add segment to parser
         self.memory_map_segments.push(segment);
     }
 
+    /// Tries to parse a string containing an [Entry]. Returns [None](Option::None) if fails
     pub fn parse_entry_info(data: &str) -> Option<Entry> {
         if data.is_empty() {
             error!("Empty entry!");
             return None;
         }
 
+        // Compile regex
         let name_regex = Regex::new(&format!(r"^ {NAME_REGEX}")).unwrap();
+
         // Entry info line can contain object name or lib and object names:
         // <address> <size> <lib name>(<obj name>)
         // <address> <size> <obj name>
+        // Compile regex
         let info_regex = Regex::new(&format!(
             r"\s+{HEX_REGEX}\s+{HEX_REGEX}\s+(?:(?:{NAME_REGEX}\({NAME_REGEX}\))|(?:{NAME_REGEX}))"
         ))
         .unwrap();
+
         // *fill <address> <size>
+        // Compile regex
         let fill_regex = Regex::new(&format!(r"^ \*fill\*\s+{HEX_REGEX}\s+{HEX_REGEX}")).unwrap();
 
         let mut iter = data.lines();
         let line = data.lines().next().unwrap();
 
+        // Try to capture entry name
         let name = match name_regex.captures(line) {
             Some(cap) => cap.get(1).unwrap().as_str(),
             None => {
@@ -123,12 +125,16 @@ impl Parser {
             }
         };
 
+        // If the line only contains the name, get the next one
         if line.trim().len() == name.len() {
             iter.next();
         }
 
         let mut entry: Option<Entry> = None;
 
+        // Parse line by line until regex matches the info
+        // It covers the cases when there are other lines we do not use before
+        // Usually it should be right after the line containing the name or on the same line
         while let Some(line) = iter.next() {
             if let Some(cap) = info_regex.captures(line) {
                 let address = u64::from_str_radix(cap.get(1).unwrap().as_str(), 16).unwrap();
@@ -160,11 +166,13 @@ impl Parser {
             }
         }
 
+        // Exit if something happened
         if entry.is_none() {
             error!("Could not parse entry:\n{data}");
             return None;
         }
 
+        // Parse line by line until regex matches the fill
         while let Some(line) = iter.next() {
             if let Some(cap) = fill_regex.captures(line) {
                 let entry = entry.as_mut().unwrap();
@@ -203,18 +211,23 @@ impl Parser {
         entry
     }
 
+    /// Tries to parse a string containing a [Segment]. Returns [None](Option::None) if fails
     pub fn parse_segment_info(data: &str) -> Option<Segment> {
         if data.trim().is_empty() {
             error!("Empty segment!");
             return None;
         }
 
+        // Compile name regex
         let name_regex = Regex::new(&format!(r"^{NAME_REGEX}")).unwrap();
+
+        // Compile info regex
         let info_regex = Regex::new(&format!(r"\s+{HEX_REGEX}\s+{HEX_REGEX}")).unwrap();
 
         let mut iter = data.lines().peekable();
         let line = iter.peek().unwrap();
 
+        // Try to capture segment name
         let name = match name_regex.captures(line) {
             Some(cap) => cap.get(1).unwrap().as_str(),
             None => {
@@ -223,13 +236,16 @@ impl Parser {
             }
         };
 
-        // Check if it is a directive
+        // Check if it is a directive and return if so
         if name == "LOAD" {
             error!("Invalid segment name:\n{data}");
             return None;
         }
 
         let mut segment = None;
+
+        // Parse line by line until regex matches the info
+        // It covers the cases when there are other lines we do not use before
         for line in iter {
             if let Some(cap) = info_regex.captures(line) {
                 let address = u64::from_str_radix(cap.get(1).unwrap().as_str(), 16).unwrap();
@@ -242,6 +258,7 @@ impl Parser {
             }
         }
 
+        // If segment does not have address and size, we create it as it is
         if segment.is_none() {
             segment = Some(Segment::new(name));
         }
@@ -249,6 +266,8 @@ impl Parser {
         segment
     }
 
+    /// Returns a vector containing pairs of start/end of [Entries](Entry), The first pair (0, n) represents the [Segment] information.
+    /// Valid [Entries](Entry) start from index of 1 (if any)
     pub fn split_segment(data: &str) -> Vec<(usize, usize)> {
         let mut pos: usize = 0;
         let mut start: usize = 0;
@@ -275,6 +294,7 @@ impl Parser {
         result
     }
 
+    /// Tries to parse a string containing a [Segment] and all its [Entries](Entry). Returns [None](Option::None) if fails
     fn parse_segment(data: &str) -> Option<Segment> {
         let start_end = Self::split_segment(data);
 
@@ -293,6 +313,7 @@ impl Parser {
             }
         }
 
+        // Check if sum of all entries sizes matches the segment parsed size
         if segment.get_address().is_some() {
             let segment_entry_sum = segment.get_entries_total_size();
             let segment_size = segment.get_size().unwrap();
@@ -309,6 +330,7 @@ impl Parser {
         Some(segment)
     }
 
+    /// Tries to parse a string containing a [Section]. Returns [None](Option::None) if fails
     pub fn parse_section(line: &str) -> Option<Section> {
         let mut ret = None;
 
@@ -327,6 +349,7 @@ impl Parser {
         ret
     }
 
+    /// Main function that returns a populated [Parser]
     pub fn parse(data: &str) -> Self {
         let mut current_section = None;
 
@@ -368,6 +391,8 @@ impl Parser {
                             parser.add_segment(segment);
                         } else if let Some(section) = Self::parse_section(first_line) {
                             current_section = Some(section);
+                        } else {
+                            error!("Could not parse data:\n{data}");
                         }
                     }
                 }
@@ -379,7 +404,7 @@ impl Parser {
     }
 }
 
-// Helper functions for ToXmlWriter::to_xml_writer trait implementation
+/// Helper functions for [to_xml_writer](#method.to_xml_writer) trait implementation
 impl Parser {
     fn write_segments<W: Write>(&self, writer: &mut XmlWriter<W>) {
         let count = self.memory_map_segments.len();
@@ -410,6 +435,8 @@ impl Parser {
 
 impl<W: Write> ToXmlWriter<W> for Parser {
     fn to_xml_writer(&self, writer: &mut XmlWriter<W>) {
+        // We only parse memory map section
+
         // writer.start_element(XmlEvent::start_element("section").attr("name", "ArchiveMembers"));
         // writer.end_element();
 

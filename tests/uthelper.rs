@@ -10,11 +10,9 @@ use rand::{distributions::Alphanumeric, Rng};
 use xml::{common::XmlVersion, reader::XmlEvent};
 
 #[allow(dead_code)]
-pub const ENTRIES_COUNT: usize = 10;
+pub const RAND_ADDRESS_MAX: u64 = u32::MAX as u64;
 #[allow(dead_code)]
-pub const RAND_STRING_SIZE: usize = 10;
-#[allow(dead_code)]
-pub const RAND_NUMBER_MAX: u64 = u32::MAX as u64;
+pub const RAND_SIZE_MAX: u64 = u32::MAX as u64;
 
 pub struct UTSinkSource {
     buffer: Rc<RefCell<Vec<u8>>>,

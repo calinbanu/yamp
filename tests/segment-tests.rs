@@ -8,13 +8,16 @@ mod uthelper;
 use uthelper::*;
 use xml::ParserConfig;
 
+const ENTRIES_COUNT: usize = 10;
+const RAND_NAME_STRING_LEN: usize = 20;
+
 #[test]
 fn new_no_size_and_address() {
-    let name = get_random_string(RAND_STRING_SIZE);
+    let segment_name = get_random_string(RAND_NAME_STRING_LEN);
 
-    let segment = Segment::new(&name);
+    let segment = Segment::new(&segment_name);
 
-    assert_eq!(segment.get_name(), name);
+    assert_eq!(segment.get_name(), segment_name);
     assert_eq!(segment.get_address(), None);
     assert_eq!(segment.get_size(), None);
     assert!(segment.get_entries().is_empty());
@@ -23,36 +26,36 @@ fn new_no_size_and_address() {
 
 #[test]
 fn new_with_size_and_address() {
-    let name = get_random_string(RAND_STRING_SIZE);
-    let address = 1;
-    let size = 1;
+    let segment_name = get_random_string(RAND_NAME_STRING_LEN);
+    let segment_address = get_random_number(RAND_ADDRESS_MAX);
+    let segment_size = get_random_number(RAND_SIZE_MAX);
 
-    let mut segment = Segment::new(&name);
-    segment.set_size_and_address(size, address);
+    let mut segment = Segment::new(&segment_name);
+    segment.set_size_and_address(segment_size, segment_address);
 
-    assert_eq!(segment.get_name(), name);
-    assert_eq!(segment.get_address(), Some(address));
-    assert_eq!(segment.get_size(), Some(size));
+    assert_eq!(segment.get_name(), segment_name);
+    assert_eq!(segment.get_address(), Some(segment_address));
+    assert_eq!(segment.get_size(), Some(segment_size));
     assert!(segment.get_entries().is_empty());
     assert_eq!(segment.get_entries_total_size(), 0);
 }
 
 #[test]
 fn entries_test() {
-    let name = get_random_string(RAND_STRING_SIZE);
+    let segment_name = get_random_string(RAND_NAME_STRING_LEN);
 
-    let mut segment = Segment::new(&name);
+    let mut segment = Segment::new(&segment_name);
 
     assert!(segment.get_entries().is_empty());
 
     let mut test_entries: Vec<Entry> = vec![];
     for _ in 0..ENTRIES_COUNT {
-        let name = get_random_string(RAND_STRING_SIZE);
-        let data = get_random_string(RAND_STRING_SIZE);
-        let address = get_random_number(RAND_NUMBER_MAX);
-        let size = get_random_number(RAND_NUMBER_MAX);
+        let entry_name = get_random_string(RAND_NAME_STRING_LEN);
+        let entry_data: String = get_random_string(RAND_NAME_STRING_LEN);
+        let entry_address = get_random_number(RAND_ADDRESS_MAX);
+        let entry_size = get_random_number(RAND_SIZE_MAX);
 
-        let entry = Entry::new(&name, address, size, &data);
+        let entry = Entry::new(&entry_name, entry_address, entry_size, &entry_data);
 
         segment.add_entry(entry.clone());
 
@@ -95,21 +98,21 @@ fn test_xml_output(segment: &Segment, skip_data: bool) {
 
 #[test]
 fn xml_writer_no_size_and_address() {
-    let name = get_random_string(RAND_STRING_SIZE);
+    let segment_name = get_random_string(RAND_NAME_STRING_LEN);
 
-    let segment = Segment::new(&name);
+    let segment = Segment::new(&segment_name);
 
     test_xml_output(&segment, false);
 }
 
 #[test]
 fn xml_writer_with_size_and_address() {
-    let name = get_random_string(RAND_STRING_SIZE);
-    let size = get_random_number(RAND_NUMBER_MAX);
-    let address: u64 = get_random_number(RAND_NUMBER_MAX);
+    let segment_name = get_random_string(RAND_NAME_STRING_LEN);
+    let segment_size = get_random_number(RAND_ADDRESS_MAX);
+    let segment_address: u64 = get_random_number(RAND_ADDRESS_MAX);
 
-    let mut segment = Segment::new(&name);
-    segment.set_size_and_address(size, address);
+    let mut segment = Segment::new(&segment_name);
+    segment.set_size_and_address(segment_size, segment_address);
 
     test_xml_output(&segment, false);
 }

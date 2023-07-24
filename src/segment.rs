@@ -1,6 +1,7 @@
 //! Segment module
 //!
 //! This module contains the code to process and store segment information
+
 use crate::{
     excelwriter::{ExcelWriter, ToExcelWriter},
     xmlwriter::XmlWriter,
@@ -12,18 +13,18 @@ use xml::writer::XmlEvent;
 /// Structure containing memory map segment information
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Segment {
-    /// Segment name
+    /// Name
     name: String,
-    /// Start address. None if [`size`](#structfield.size) is missing
+    /// Address or [None](Option::None) if missing (valid along with [size](#structfield.size))
     address: Option<u64>,
-    /// Segment size. None if [`address`](#structfield.address) is missing
+    /// Size or [None](Option::None) if missing (valid along with [address](#structfield.address))
     size: Option<u64>,
     /// List of entries
     entries: Vec<Entry>,
 }
 
 impl Segment {
-    /// Creates a new `Segment` with `name`
+    /// Creates a new [Segment]
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
@@ -33,7 +34,7 @@ impl Segment {
         }
     }
 
-    /// Sets segment `size` and `address`
+    /// Sets segment [size](#structfield.size) and [address](#structfield.address)
     pub fn set_size_and_address(&mut self, size: u64, address: u64) {
         self.address = Some(address);
         self.size = Some(size);
@@ -66,7 +67,7 @@ impl Segment {
         sum
     }
 
-    /// Adds new `entry`
+    /// Adds new entry
     pub fn add_entry(&mut self, entry: Entry) {
         self.entries.push(entry);
     }
@@ -76,17 +77,17 @@ impl Segment {
         self.entries.as_slice()
     }
 
-    /// Gets segment `size` or None
+    /// Gets segment [size](#structfield.size) or [None](Option::None)
     pub fn get_size(&self) -> Option<u64> {
         self.size
     }
 
-    /// Gets segment `name`
+    /// Gets segment [name](#structfield.name)
     pub fn get_name(&self) -> &str {
         &self.name
     }
 
-    /// Gets segment `address` or None
+    /// Gets segment [address](#structfield.address) or [None](Option::None)
     pub fn get_address(&self) -> Option<u64> {
         self.address
     }
