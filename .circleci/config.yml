@@ -3,7 +3,10 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: cimg/rust:1.70.0
+      - image: banucalin/yamp:0.0.0
+        auth:
+            username: banucalin
+            password: $DOCKERHUB_PASSWORD
     steps:
       - checkout
       - run: cargo generate-lockfile
@@ -17,7 +20,10 @@ jobs:
             - /usr/local/cargo/
   test:
     docker:
-      - image: cimg/rust:1.70.0
+      - image: banucalin/yamp:0.0.0
+        auth:
+              username: banucalin
+              password: $DOCKERHUB_PASSWORD
     steps:
       - checkout
       - run: cargo generate-lockfile
@@ -30,6 +36,9 @@ workflows:
   build_and_test:
     jobs:
       - build
+        context:
+            - build-env-vars
+            - docker-hub-creds
       - test:
           requires:
             - build
