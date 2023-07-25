@@ -35,10 +35,10 @@ jobs:
 workflows:
   build_and_test:
     jobs:
-      - build
-        context:
-            - build-env-vars
-            - docker-hub-creds
+      - build:
+          context:
+              - build-env-vars
+              - docker-hub-creds
       - test:
           requires:
             - build
