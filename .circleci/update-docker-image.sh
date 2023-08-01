@@ -1,19 +1,19 @@
 #!/bin/bash
 
-VERSION=0.0.0
+VERSION=0.4.1
 REPO=banucalin/yamp
 PUSH=1
 
-IMG_ID=$(docker images $REPO -aq)
-
-if [ ! -z $IMG_ID ]; then
-    echo "Removing docker image: $IMG_ID"
-    docker rmi $IMG_ID
-fi
-
-docker build -t $REPO:$VERSION .
+docker build --build-arg VERSION=$VERSION -t $REPO:$VERSION .
 
 if [ $PUSH -eq 1 ]; then
+    # TODO(calin) Check if allready loged in
+    # Login to docker hub
     docker login -u banucalin
-    docker push $REPO:$VERSION
+
+    # Add latest tag
+    docker tag $REPO:$VERSION $REPO:latest
+
+    # Push image to docker hub
+    docker push -a $REPO
 fi

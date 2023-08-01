@@ -1,44 +1,105 @@
 version: 2.1
+orbs:
+  codecov: codecov/codecov@3.2.5
+
+executors:
+  yamp-docker-img:
+    docker:
+      - image: banucalin/yamp:latest
 
 jobs:
-  build:
-    docker:
-      - image: banucalin/yamp:0.0.0
-        auth:
-            username: banucalin
-            password: $DOCKERHUB_PASSWORD
+  build-debug:
+    executor: yamp-docker-img
     steps:
       - checkout
-      - run: cargo generate-lockfile
+      - run:
+          name: Version information
+          command: rustc --version; cargo --version; rustup --version
+      - run:
+          name: Calculate dependencies
+          command: cargo generate-lockfile
       - restore_cache:
           keys:
-            - cargo-key-{{ checksum "Cargo.lock" }}
-      - run: cargo build
+            - cargo-debug-key-{{ .Environment.CACHE_VERSION }}-{{ checksum "Cargo.lock" }}
+      - run:
+          name: Build all targets
+          command: cargo build
       - save_cache:
-          key: cargo-key-{{ checksum "Cargo.lock" }}
           paths:
-            - /usr/local/cargo/
-  test:
-    docker:
-      - image: banucalin/yamp:0.0.0
-        auth:
-              username: banucalin
-              password: $DOCKERHUB_PASSWORD
+            - /usr/local/cargo/registry
+            - target/debug/.fingerprint
+            - target/debug/build
+            - target/debug/deps
+          key: cargo-debug-key-{{ .Environment.CACHE_VERSION }}-{{ checksum "Cargo.lock" }}
+
+  build-release-x86_64-linux-gnu:
+    executor: yamp-docker-img
     steps:
       - checkout
-      - run: cargo generate-lockfile
+      - run:
+          name: Version information
+          command: rustc --version; cargo --version; rustup --version
+      - run:
+          name: Build all targets
+          command: ./build-and-package.sh --release --target x86_64-unknown-linux-gnu
+      - store_artifacts:
+          path: ./artifacts
+
+  test-and-profile:
+    executor: yamp-docker-img
+    steps:
+      - checkout
+      - run:
+          name: Generate profile data
+          command: ./profile.sh --test --tool grcov --format lcov --output profile-data
+      - run: 
+          name: Generate unit test xml
+          command: cargo +nightly test -- -Z unstable-options --format json --report-time | cargo2junit > unit_test_results.xml
+      - store_test_results:
+          path: unit_test_results.xml
+
+  format:
+    executor: yamp-docker-img
+    steps:
+      - checkout
+      - run:
+          name: Formatting
+          command: cargo fmt --all -- --check
+
+  lint:
+    executor: yamp-docker-img
+    steps:
+      - checkout
+      - run:
+          name: Linting
+          command: cargo clippy --no-deps
+
+  security:
+    executor: yamp-docker-img
+    steps:
+      - checkout
       - restore_cache:
-          keys:
-            - cargo-key-{{ checksum "Cargo.lock" }}
-      - run: cargo test
+          key: cargo-audit-key-{{ .Environment.AUDIT_CACHE_VERSION }}
+      - run:
+          name: Check for known security issues in dependencies
+          command: cargo audit || true
+      - save_cache:
+          paths: /usr/local/cargo/advisory-db
+          key: cargo-audit-key-{{ .Environment.AUDIT_CACHE_VERSION }}
 
 workflows:
-  build_and_test:
+  build-and-test:
     jobs:
-      - build:
-          context:
-              - build-env-vars
-              - docker-hub-creds
-      - test:
+      - test-and-profile:
+          post-steps:
+            - codecov/upload:
+                file: profile-data/lcov.info
+      - build-release-x86_64-linux-gnu:
           requires:
-            - build
+            - test-and-profile
+
+  misc:
+    jobs:
+      - lint
+      - format
+      - security
