@@ -120,7 +120,7 @@ jobs:
           command: ./build-and-package.sh --release --target x86_64-unknown-linux-gnu
       - run:
           name: Upload to release
-          command: ./gh-deploy.sh --artifacts ./artifacts
+          command: ./gh-deploy.sh --branch develop --artifacts ./artifacts
       - store_artifacts:
           path: ./artifacts
 
