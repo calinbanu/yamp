@@ -52,7 +52,7 @@ jobs:
       - run:
           name: Generate profile data
           command: ./profile.sh --test --tool grcov --format lcov --output profile-data
-      - run: 
+      - run:
           name: Generate unit test xml
           command: cargo +nightly test -- -Z unstable-options --format json --report-time | cargo2junit > unit_test_results.xml
       - store_test_results:
@@ -90,9 +90,21 @@ jobs:
 workflows:
   build-test-deploy:
     jobs:
-      - lint
-      - format
-      - security
+      - lint:
+        filters:
+            tags:
+              only: /.*/
+
+      - format:
+        filters:
+              tags:
+                only: /.*/
+
+      - security:
+        filters:
+            tags:
+              only: /.*/
+
       - test-and-profile:
           post-steps:
             - codecov/upload:
@@ -101,11 +113,16 @@ workflows:
             - lint
             - format
             - security
+          filters:
+            tags:
+              only: /.*/
+
       - build-release-x86_64-linux-gnu:
           requires:
             - test-and-profile
           filters:
+            tags:
+              only: /^\d+\.\d+\.\d+/
             branches:
               only:
-                - main
-      
+                - develop
