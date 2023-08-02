@@ -28,19 +28,6 @@ jobs:
             - /usr/local/cargo/registry
           key: cargo-registry-key-{{ .Environment.CACHE_VERSION }}-{{ checksum "Cargo.lock" }}
 
-  build-release-x86_64-linux-gnu:
-    executor: yamp-docker-img
-    steps:
-      - checkout
-      - run:
-          name: Version information
-          command: rustc --version; cargo --version; rustup --version
-      - run:
-          name: Build all targets
-          command: ./build-and-package.sh --release --target x86_64-unknown-linux-gnu
-      - store_artifacts:
-          path: ./artifacts
-
   test:
     executor: yamp-docker-img
     steps:
@@ -113,6 +100,30 @@ jobs:
           paths: /usr/local/cargo/advisory-db
           key: cargo-audit-key-{{ .Environment.AUDIT_CACHE_VERSION }}
 
+  prepare-release:
+    executor: yamp-docker-img
+    steps:
+      - checkout
+      - run:
+          name: Create draft github release
+          command: ./gh-deploy.sh --draft --release
+
+  build-release-x86_64-linux-gnu:
+    executor: yamp-docker-img
+    steps:
+      - checkout
+      - run:
+          name: Version information
+          command: rustc --version; cargo --version; rustup --version
+      - run:
+          name: Build all targets
+          command: ./build-and-package.sh --release --target x86_64-unknown-linux-gnu
+      - run:
+          name: Upload to release
+          command: ./gh-deploy.sh --artifacts ./artifacts
+      - store_artifacts:
+          path: ./artifacts
+
 workflows:
   test-and-profile:
     jobs:
@@ -145,7 +156,17 @@ workflows:
 
   deploy:
     jobs:
+      - prepare-release:
+          type: approval
+          filters:
+            tags:
+              only: /\d+\.\d+\.\d+/
+            branches:
+              ignore: /.*/
+
       - build-release-x86_64-linux-gnu:
+          requires:
+            - prepare-release
           filters:
             tags:
               only: /\d+\.\d+\.\d+/
