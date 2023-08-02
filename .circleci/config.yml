@@ -143,10 +143,11 @@ workflows:
             - format
             - security
 
+  deploy:
+    jobs:
       - build-release-x86_64-linux-gnu:
-          requires:
-            - test
           filters:
+            tags:
+              only: /\d+\.\d+\.\d+/
             branches:
-              only:
-                - main
+              ignore: /.*/
