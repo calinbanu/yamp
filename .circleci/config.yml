@@ -165,6 +165,8 @@ workflows:
               ignore: /.*/
 
       - prepare-release:
+          context:
+            - GITHUB_CREDS
           requires:
             - release-approval
           filters:
@@ -174,6 +176,8 @@ workflows:
               ignore: /.*/
 
       - build-release-x86_64-linux-gnu:
+          context:
+            - GITHUB_CREDS
           requires:
             - prepare-release
           filters:
