@@ -88,18 +88,24 @@ jobs:
           key: cargo-audit-key-{{ .Environment.AUDIT_CACHE_VERSION }}
 
 workflows:
-  build-and-test:
-    jobs:
-      - test-and-profile:
-          post-steps:
-            - codecov/upload:
-                file: profile-data/lcov.info
-      - build-release-x86_64-linux-gnu:
-          requires:
-            - test-and-profile
-
-  misc:
+  build-test-deploy:
     jobs:
       - lint
       - format
       - security
+      - test-and-profile:
+          post-steps:
+            - codecov/upload:
+                file: profile-data/lcov.info
+          requires:
+            - lint
+            - format
+            - security
+      - build-release-x86_64-linux-gnu:
+          requires:
+            - test-and-profile
+          filters:
+            branches:
+              only:
+                - main
+      

@@ -3,15 +3,13 @@ FROM rust:1.70.0-slim-bullseye
 ARG VERSION=0.0.0
 LABEL version=$VERSION
 
-RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-
 # Requirements
 # codecov -> coreutils, gnupg, curl
 # cargo-audit -> libssl-dev, pkg-config
 # xlsxwriter -> clang
-RUN apt-get update && apt-get -y upgrade && apt-get install -y git libssl-dev pkg-config clang curl coreutils gnupg zip gh
+RUN apt-get update && apt-get -y upgrade && apt-get install -y git libssl-dev pkg-config clang curl coreutils gnupg zip
+
+RUN curl -L https://github.com/cli/cli/releases/download/v2.32.1/gh_2.32.1_linux_amd64.deb > gh_2.32.1_linux_amd64.deb && dpkg -i *.deb && apt install -f
 
 RUN rustup component add rustfmt
 RUN rustup component add clippy

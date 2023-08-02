@@ -3,7 +3,6 @@
 RELEASE=0
 DEBUG=1
 
-APP=parser
 PACKAGE_NAME="yamp"
 TARGET=
 BUILD_OPTIONS="--quiet"
@@ -33,11 +32,17 @@ if [ -z $TARGET ]; then
     exit 1
 fi
 
+# Get bin name from Cargo.toml
+APP=$(cat Cargo.toml | grep name | tail -n 1 | sed 's/^[^"]*"\([^"]*\)".*/\1/')
+
+# Get version name from Cargo.toml
+VERSION=$(cat Cargo.toml | grep -m 1 version | grep -Eo '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
+
+# Get tag from latest commit, if any
 TAG=$(git describe --tags --exact-match $COMMIT 2> /dev/null | grep -Eo '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
 if [ -z $TAG ]; then
     echo "Latest commit does not contain a tag!"
 else
-    echo "git tag: $TAG"
     if [ "$TAG" != "$VERSION" ]; then
         echo "Version does not match commit tag! $VERSION vs $TAG"
         exit 1
@@ -49,10 +54,12 @@ if [ $RELEASE -eq 1 ]; then
 fi
 BUILD_OPTIONS="$BUILD_OPTIONS --target=$TARGET"
 
+echo "Application: $APP"
 echo "Target: $TARGET"
+echo "Tag/Version: $VERSION"
 
 echo "Cleaning..."
-# cargo clean --quiet
+cargo clean --quiet
 
 echo "Building... "
 echo "Build options: $BUILD_OPTIONS"
@@ -67,10 +74,6 @@ if [ $RELEASE -eq 1 ]; then
 elif [ $DEBUG -eq 1 ]; then
     BUILD_DIR=$TARGET_DIR/debug
 fi
-
-VERSION=$($BUILD_DIR/$APP --version | grep -Eo '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
-echo "Application: $APP"
-echo "Version: $VERSION"
 
 COMMIT=$(git log -n 1 --pretty=format:"%H")
 echo "Last commit: $COMMIT"
