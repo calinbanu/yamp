@@ -106,7 +106,7 @@ jobs:
       - checkout
       - run:
           name: Create draft github release
-          command: ./gh-deploy.sh --draft --release
+          command: ./gh-deploy.sh --draft --release --branch develop
 
   build-release-x86_64-linux-gnu:
     executor: yamp-docker-img

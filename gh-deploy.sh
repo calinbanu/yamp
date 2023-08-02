@@ -17,11 +17,11 @@ while [[ $# -gt 0 ]]; do
         shift # past argument
         shift # past argument
         ;;
-        # -b|--branch)
-        # TARGET_BRANCH=$2
-        # shift # past value
-        # shift # past argument
-        # ;;
+        -b|--branch)
+        TARGET_BRANCH=$2
+        shift # past value
+        shift # past argument
+        ;;
         -d|--draft)
         DRAFT="--draft"
         shift # past argument
@@ -40,11 +40,10 @@ APP=$(cat Cargo.toml | grep name | tail -n 1 | sed 's/^[^"]*"\([^"]*\)".*/\1/')
 VERSION=$(cat Cargo.toml | grep -m 1 version | grep -Eo '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
 
 # Get current branch name
-# BRANCH=$(git branch --show-current)
-# if [ "$BRANCH" != "$TARGET_BRANCH" ]; then
-#     echo "We only release from $TARGET_BRANCH (current: $BRANCH)!"
-#     exit 1
-# fi
+BRANCH=$(git branch --show-current)
+if [ "$BRANCH" != "$TARGET_BRANCH" ]; then
+    git checkout $TARGET_BRANCH
+fi
 
 # Get tag from latest commit, if any
 TAG=$(git describe --tags --exact-match $COMMIT 2> /dev/null | grep -Eo '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
