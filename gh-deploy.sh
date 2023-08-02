@@ -43,6 +43,7 @@ VERSION=$(cat Cargo.toml | grep -m 1 version | grep -Eo '[[:digit:]]+\.[[:digit:
 BRANCH=$(git branch --show-current)
 if [ "$BRANCH" != "$TARGET_BRANCH" ]; then
     git checkout $TARGET_BRANCH
+    BRANCH=$TARGET_BRANCH
 fi
 
 # Get tag from latest commit, if any
