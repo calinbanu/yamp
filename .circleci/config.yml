@@ -156,8 +156,17 @@ workflows:
 
   deploy:
     jobs:
-      - prepare-release:
+      - release-approval:
           type: approval
+          filters:
+            tags:
+              only: /\d+\.\d+\.\d+/
+            branches:
+              ignore: /.*/
+
+      - prepare-release:
+          requires:
+            - release-approval
           filters:
             tags:
               only: /\d+\.\d+\.\d+/
