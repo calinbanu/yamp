@@ -75,6 +75,15 @@ jobs:
       - store_artifacts:
           path: ./artifacts
 
+  upload-release-artifacts:
+    executor: yamp-docker-img
+    steps:
+      - attach_workspace:
+           at: .
+      - run:
+          name: Upload to release
+          command: ./gh-deploy.sh --branch develop --artifacts ./artifacts
+
 workflows:
   develop:
     jobs:
@@ -108,10 +117,19 @@ workflows:
               ignore: /.*/
 
       - build-release-x86_64-linux-gnu:
+          requires:
+            - prepare-release
+          filters:
+            tags:
+              only: /\d+\.\d+\.\d+/
+            branches:
+              ignore: /.*/
+      
+      - upload-release-artifacts:
           context:
             - GITHUB_CREDS
           requires:
-            - prepare-release
+            - build-release-x86_64-linux-gnu
           filters:
             tags:
               only: /\d+\.\d+\.\d+/
