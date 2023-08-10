@@ -78,10 +78,9 @@ jobs:
   upload-release-artifacts:
     executor: yamp-docker-img
     steps:
+      - checkout
       - attach_workspace:
            at: .
-      - run:
-          command: ls -al .
       - run:
           name: Upload to release
           command: ./gh-deploy.sh --branch develop --artifacts ./artifacts
