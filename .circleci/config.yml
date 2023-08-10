@@ -8,7 +8,7 @@ executors:
       - image: banucalin/yamp:latest
 
 jobs:
-  fetch:
+  build-test-profile:
     executor: yamp-docker-img
     steps:
       - checkout
@@ -16,89 +16,38 @@ jobs:
           name: Version information
           command: rustc --version; cargo --version; rustup --version
       - run:
-          name: Calculate dependencies
+          name: Calculate cargo dependencies
           command: cargo generate-lockfile
       - restore_cache:
           key: cargo-registry-key-{{ .Environment.CACHE_VERSION }}-{{ checksum "Cargo.lock" }}
+      - restore_cache:
+          key: cargo-audit-key-{{ .Environment.AUDIT_CACHE_VERSION }}
       - run:
-          name: Fetch dependencies
+          name: Fetch cargo dependencies
           command: cargo fetch
-      - save_cache:
-          paths:
-            - /usr/local/cargo/registry
-          key: cargo-registry-key-{{ .Environment.CACHE_VERSION }}-{{ checksum "Cargo.lock" }}
-
-  test:
-    executor: yamp-docker-img
-    steps:
-      - checkout
-      - run:
-          name: Calculate dependencies and fetch
-          command: cargo generate-lockfile
-      - restore_cache:
-          key: cargo-registry-key-{{ .Environment.CACHE_VERSION }}-{{ checksum "Cargo.lock" }}
       - run:
           name: Generate unit test xml
           command: cargo +nightly test -- -Z unstable-options --format json --report-time | cargo2junit > unit_test_results.xml
-      - store_test_results:
-          path: unit_test_results.xml
-
-  profile:
-    executor: yamp-docker-img
-    steps:
-      - checkout
-      - run:
-          name: Calculate dependencies and fetch
-          command: cargo generate-lockfile
-      - restore_cache:
-          key: cargo-registry-key-{{ .Environment.CACHE_VERSION }}-{{ checksum "Cargo.lock" }}
       - run:
           name: Generate profile data
-          command: ./profile.sh --test --tool grcov --format lcov --output profile-data
-      
-  format:
-    executor: yamp-docker-img
-    steps:
-      - checkout
+          command: ./profile.sh --test --clean --tool grcov --format lcov --output profile-data
       - run:
-          name: Calculate dependencies and fetch
-          command: cargo generate-lockfile
-      - restore_cache:
-          key: cargo-registry-key-{{ .Environment.CACHE_VERSION }}-{{ checksum "Cargo.lock" }}
+          name: Check formatting
+          command: cargo clean && cargo fmt --all -- --check
       - run:
-          name: Formatting
-          command: cargo fmt --all -- --check
-
-  lint:
-    executor: yamp-docker-img
-    steps:
-      - checkout
-      - run:
-          name: Calculate dependencies and fetch
-          command: cargo generate-lockfile
-      - restore_cache:
-          key: cargo-registry-key-{{ .Environment.CACHE_VERSION }}-{{ checksum "Cargo.lock" }}
-      - run:
-          name: Linting
-          command: cargo clippy --no-deps
-
-  security:
-    executor: yamp-docker-img
-    steps:
-      - checkout
-      - run:
-          name: Calculate dependencies and fetch
-          command: cargo generate-lockfile
-      - restore_cache:
-          key: cargo-registry-key-{{ .Environment.CACHE_VERSION }}-{{ checksum "Cargo.lock" }}
-      - restore_cache:
-          key: cargo-audit-key-{{ .Environment.AUDIT_CACHE_VERSION }}
+          name: Check linting
+          command: cargo clean && cargo clippy --no-deps
       - run:
           name: Check for known security issues in dependencies
-          command: cargo audit || true
+          command: cargo clean && cargo audit || true
+      - save_cache:
+          paths: /usr/local/cargo/registry
+          key: cargo-registry-key-{{ .Environment.CACHE_VERSION }}-{{ checksum "Cargo.lock" }}
       - save_cache:
           paths: /usr/local/cargo/advisory-db
           key: cargo-audit-key-{{ .Environment.AUDIT_CACHE_VERSION }}
+      - store_test_results:
+          path: unit_test_results.xml
 
   prepare-release:
     executor: yamp-docker-img
@@ -125,34 +74,12 @@ jobs:
           path: ./artifacts
 
 workflows:
-  test-and-profile:
+  validate-workflow:
     jobs:
-      - fetch
-      - lint:
-          requires:
-            - fetch
-
-      - format:
-          requires:
-            - fetch
-
-      - security:
-          requires:
-            - fetch
-
-      - test:
-          requires:
-            - fetch
-
-      - profile:
+      - build-test-profile:
           post-steps:
             - codecov/upload:
                 file: profile-data/lcov.info
-          requires:
-            - test
-            - lint
-            - format
-            - security
 
   deploy:
     jobs:

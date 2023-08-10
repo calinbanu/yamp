@@ -9,6 +9,7 @@ LABEL version=$VERSION
 # xlsxwriter -> clang
 RUN apt-get update && apt-get -y upgrade && apt-get install -y git libssl-dev pkg-config clang curl coreutils gnupg zip
 
+# Install github CLI for release creation
 RUN curl -L https://github.com/cli/cli/releases/download/v2.32.1/gh_2.32.1_linux_amd64.deb > gh_2.32.1_linux_amd64.deb && dpkg -i *.deb && apt install -f
 
 RUN rustup component add rustfmt
