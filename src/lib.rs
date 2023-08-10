@@ -227,6 +227,11 @@ impl Parser {
         let mut iter = data.lines().peekable();
         let line = iter.peek().unwrap();
 
+        // Check if it is a directive and return if so
+        if line.contains("LOAD") {
+            return None;
+        }
+
         // Try to capture segment name
         let name = match name_regex.captures(line) {
             Some(cap) => cap.get(1).unwrap().as_str(),
@@ -235,12 +240,6 @@ impl Parser {
                 return None;
             }
         };
-
-        // Check if it is a directive and return if so
-        if name == "LOAD" {
-            error!("Invalid segment name:\n{data}");
-            return None;
-        }
 
         let mut segment = None;
 
@@ -392,7 +391,7 @@ impl Parser {
                         } else if let Some(section) = Self::parse_section(first_line) {
                             current_section = Some(section);
                         } else {
-                            error!("Could not parse data:\n{data}");
+                            error!("Could not parse data:\n{chunk}");
                         }
                     }
                 }

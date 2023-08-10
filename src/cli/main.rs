@@ -1,10 +1,9 @@
-use log::LevelFilter;
-use parser::excelwriter::{ExcelWriter, ToExcelWriter};
-// use ::parser::xmlwriter::XmlWriter;
 use ::parser::xmlwriter::{ToXmlWriter, XmlWriter};
 use ::parser::Parser as MapParser;
 use clap::Parser as CliParser;
-// use parser::xmlwriter::ToXmlWriter;
+use log::LevelFilter;
+use parser::excelwriter::{ExcelWriter, ToExcelWriter};
+use std::path::Path;
 use std::{fs::File, io::Write};
 
 #[derive(CliParser)]
@@ -18,7 +17,6 @@ struct Cli {
     #[arg(
         long,
         value_name = "PATH",
-        default_value = "mapfile.xlsx",
         default_missing_value = "mapfile.xlsx",
         require_equals = true,
         num_args = 0..=1
@@ -73,6 +71,29 @@ fn main() -> std::io::Result<()> {
         let mut xmlwriter = XmlWriter::new(file, &cli.mapfile);
         xmlwriter.set_skip_data(true);
         parser.to_xml_writer(&mut xmlwriter);
+    } else if cli.xlsfile.is_none() {
+        println!(
+            "Parsed mapfile: {}",
+            Path::new(&cli.mapfile)
+                .canonicalize()
+                .unwrap()
+                .to_str()
+                .unwrap()
+        );
+        let mut count = 0;
+        for segment in parser.get_memory_map_segments() {
+            count += segment.get_entries().len();
+        }
+
+        println!(
+            "    Segments count: {}",
+            parser.get_memory_map_segments().len()
+        );
+        println!("    Entries count: {}", count);
+        println!(
+            "    Objects count: {}",
+            parser.get_memory_map_segments().len()
+        );
     }
 
     if let Some(path) = cli.xlsfile {
