@@ -39,7 +39,7 @@ jobs:
           command: cargo clean && cargo clippy --no-deps
       - run:
           name: Check for known security issues in dependencies
-          command: cargo clean && cargo audit || true
+          command: cargo clean && cargo audit
       - save_cache:
           paths: /usr/local/cargo/registry
           key: cargo-registry-key-{{ .Environment.CACHE_VERSION }}-{{ checksum "Cargo.lock" }}

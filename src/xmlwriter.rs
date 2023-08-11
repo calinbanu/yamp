@@ -3,6 +3,7 @@
 //! This module contains the code for XML Writer
 
 use std::io::Write;
+use time::{format_description, OffsetDateTime};
 use xml::{writer::XmlEvent, EmitterConfig, EventWriter};
 
 /// This trait must be implemented in order to convert into an xml format for XmlWriter
@@ -41,13 +42,25 @@ where
             skip_data: false,
             empty: false,
         };
-        let datetime: chrono::DateTime<chrono::offset::Utc> = std::time::SystemTime::now().into();
+
+        let datetime = match OffsetDateTime::now_local() {
+            Ok(value) => value
+                .format(
+                    &format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]")
+                        .unwrap(),
+                )
+                .unwrap(),
+            Err(_) => OffsetDateTime::now_utc()
+                .format(
+                    &format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second] UTC")
+                        .unwrap(),
+                )
+                .unwrap(),
+        };
+
         writer.start_element(
             XmlEvent::start_element("mapfile")
-                .attr(
-                    "datetime",
-                    datetime.format("%d/%m/%Y %T").to_string().as_str(),
-                )
+                .attr("datetime", &datetime)
                 .attr("source", source),
         );
         writer
