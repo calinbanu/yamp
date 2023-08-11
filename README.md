@@ -26,14 +26,14 @@ The parser will try to split the mapfile into **Sections** when it matches the f
 Only the "*Linker script and memory map*" **Section** will be further parsed and split into **Segments** (bss/rodata/text/etc.) and then into **Entries**:
 
 - Section "*Linker script and memory map*"
-	- Segment 0
-		- Entry 0
-		- Entry 1
-		- ...
-		- Entry M
-	- Segment 1
-	- ...
-	- Segment N
+    - Segment 0
+        - Entry 0
+        - Entry 1
+        - ...
+        - Entry M
+    - Segment 1
+    - ...
+    - Segment N
 
 ### XML Output
 
@@ -45,21 +45,21 @@ The structure of the XML file will be the following:
 <mapfile datetime="<data and time>" source="<file name>">
     <section name="MemoryMap">
         <segments count="<number>">
-			<segment name="<string>" address="<hex address>" size="<number>">
+            <segment name="<string>" address="<hex address>" size="<number>">
                 <entry name="<string>" address="<hex address>" size="<number>" fill_size="<number>" fill_overlaps="<true/false>" />
-				...
+                ...
             </segment>
-			...
-		</segments>
+            ...
+        </segments>
         <objects count="<number>">
-			<object name="<string>">
+            <object name="<string>">
                 <segments count="<number>">
                     <segment name="<string>" size="<number>" />
-					...
+                    ...
                 </segments>
             </object>
-			...
-		</objects>
+            ...
+        </objects>
     </section>
 </mapfile>
 ```
@@ -115,3 +115,5 @@ Options:
 - Add option to filter sections
 - Parse libs information
 - Support as many compilers as possible
+- ~~Fix audit security errors~~
+- Add option to output in csv format
