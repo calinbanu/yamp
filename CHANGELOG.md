@@ -1,10 +1,10 @@
 # Change Log
 
-All notable changes to this project will be documented in this file.
- 
-The format is based on [Keep a Changelog](http://keepachangelog.com/)
-and this project adheres to [Semantic Versioning](http://semver.org/).
- 
-## Initial Release [1.0.0] - 2023-08-10
+## [1.1.0] - 2023-08-11
 
-CI (Continuos Integration) Docker image version : 1.0.0
+CI (Continuos Integration) Docker image version : 1.1.0
+
+### Changed
+- Rust *xlsxwriter* package replaced with *rust_xlsxwriter* ([Cargo.toml](Cargo.toml)).
+### Removed
+- *Clang* removed from [Dockerfile](.circleci/Dockerfile) as its not needed anymore.

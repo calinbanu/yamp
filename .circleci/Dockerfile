@@ -6,8 +6,7 @@ LABEL version=$VERSION
 # Requirements
 # codecov -> coreutils, gnupg, curl
 # cargo-audit -> libssl-dev, pkg-config
-# xlsxwriter -> clang
-RUN apt-get update && apt-get -y upgrade && apt-get install -y git libssl-dev pkg-config clang curl coreutils gnupg zip
+RUN apt-get update && apt-get -y upgrade && apt-get install -y git libssl-dev pkg-config curl coreutils gnupg zip
 
 # Install github CLI for release creation
 RUN curl -L https://github.com/cli/cli/releases/download/v2.32.1/gh_2.32.1_linux_amd64.deb > gh_2.32.1_linux_amd64.deb && dpkg -i *.deb && apt install -f
